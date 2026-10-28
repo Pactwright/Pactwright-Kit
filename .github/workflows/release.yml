@@ -1,0 +1,11 @@
+name: release
+# changesets → npm (ROADMAP K-17)
+on:
+  pull_request:
+
+jobs:
+  run:
+    if: false   # enabled in ROADMAP K-17
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4

@@ -1,0 +1,12 @@
+name: e2e-testnet
+# nightly e2e of every scenario in ARCHITECTURE §13 (ROADMAP K-16)
+on:
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  run:
+    if: false   # enabled in ROADMAP K-16
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4

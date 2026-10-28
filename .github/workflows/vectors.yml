@@ -1,0 +1,11 @@
+name: vectors
+# core hashing vs the pinned contracts release's test-vectors (ROADMAP K-03)
+on:
+  pull_request:
+
+jobs:
+  run:
+    if: false   # enabled in ROADMAP K-03
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4

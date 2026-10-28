@@ -1,0 +1,22 @@
+{
+  "name": "pactwright-kit",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "echo 'lint: set up in ROADMAP K-01' && exit 0",
+    "format": "prettier --check ."
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.0",
+    "@types/node": "^24.0.0",
+    "prettier": "^3.6.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  }
+}

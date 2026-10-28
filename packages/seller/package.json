@@ -1,0 +1,22 @@
+{
+  "name": "@pactwright/seller",
+  "version": "0.0.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run --root ../.. --dir ."
+  },
+  "dependencies": {
+    "@pactwright/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "express": "^5.1.0"
+  },
+  "peerDependencies": {
+    "express": "^5.0.0"
+  }
+}

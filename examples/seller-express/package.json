@@ -1,0 +1,9 @@
+{
+  "name": "@pactwright/example-seller-express",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@pactwright/core": "workspace:*"
+  }
+}
