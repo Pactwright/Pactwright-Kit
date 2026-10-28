@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-28 |
-| Progress | **2 / 52 tasks (4%)** |
+| Progress | **8 / 52 tasks (15%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -16,8 +16,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Section | Tasks | Done | % |
 |---|---|---|---|
 | Foundations (this repo) | 7 | 2 | 29% |
-| Phase 3 — Kit | 17 | 0 | 0% |
-| Phase 4 — Verifier | 11 | 0 | 0% |
+| Phase 3 — Kit | 17 | 4 | 24% |
+| Phase 4 — Verifier | 11 | 2 | 18% |
 | Phase 7 — v1 | 10 | 0 | 0% |
 | Phase 9 — v2 | 7 | 0 | 0% |
 
@@ -37,10 +37,10 @@ Repo-level setup tasks.
 
 SDK, MCP and CLI for M0 and M2.
 
-- [~] **K-01** Workspace: pnpm, Node 24, strict TS, lint, Vitest, changesets, `.env.example` — wave · M · F-02
-- [~] **K-02** `core/schemas.ts`: `PactwrightExtra` v2, `Certificate`, enums — wave · M · K-01 · ARCH §7.2
+- [x] **K-01** Workspace: pnpm, Node 24, strict TS, lint, Vitest, changesets, `.env.example` — wave · M · F-02 (#65, 2026-10-28)
+- [x] **K-02** `core/schemas.ts`: `PactwrightExtra` v2, `Certificate`, enums — wave · M · K-01 · ARCH §7.2 (#65, 2026-10-28)
 - [ ] **K-03** `core/hashing.ts` + `vectors.test.ts` against the pinned contracts release — core · H · C-18 · ADR-015
-- [ ] **K-04** `core/merkle.ts`, `amounts.ts`, `network.ts` (fails on incomplete config) — wave · M · K-02
+- [x] **K-04** `core/merkle.ts`, `amounts.ts`, `network.ts` (fails on incomplete config) — wave · M · K-02 (#65, 2026-10-28)
 - [ ] **K-05** `contracts-client` generated from release bindings — wave · T · C-18
 - [ ] **K-06** `seller`: 402 builder, Express middleware, signed `X-Pactwright-Delivery`, refuse terminal pacts, startup checks — core · H · K-03 · FR-P1, FR-V2
 - [ ] **K-07** `seller` hooks: `createSettleHook()`, M0 `RefundVault.refund` on DENY/partial, M2 auto-settle on ALLOW — wave · H · K-06, C-15 · FR-S5
@@ -50,7 +50,7 @@ SDK, MCP and CLI for M0 and M2.
 - [ ] **K-11** MCP server with `find_sellers`, `buy`, `get_pact`, `dispute`, `get_certificate` — wave · H · K-09 · FR-I2
 - [ ] **K-12** CLI: `verify`, `pact`, `agent-create`, `agent-topup` — wave · M · K-10 · FR-V9
 - [ ] **K-13** Adapters: `types.ts`, `discovery-bazaar`, `reputation-identity`, `gate-manual`, `wallet-keypair`, `verifier-witness` — wave · M · K-02 · ARCH §8.6
-- [ ] **K-14** Vendor `@witness/core` under `vendor/witness-core/` with NOTICE — wave · T · K-01
+- [x] **K-14** Vendor `@witness/core` under `vendor/witness-core/` with NOTICE — wave · T · K-01 (#65, 2026-10-28)
 - [ ] **K-15** Examples: `seller-express`, `agent-node` — wave · M · K-09
 - [ ] **K-16** `e2e-testnet.yml` nightly covering every MVP scenario in ARCH §13 — wave · H · K-09, V-10, S-04
 - [ ] **K-17** Publish `@pactwright/*` 0.1.0 to npm — core · T · K-16
@@ -59,10 +59,10 @@ SDK, MCP and CLI for M0 and M2.
 
 Trustworthy, reproducible verdicts for one condition kind.
 
-- [ ] **V-01** Hono server, `/health`, `/v1/envelopes/:sha256`, store with unique `(pact_id, milestone)` — wave · M · K-01
+- [x] **V-01** Hono server, `/health`, `/v1/envelopes/:sha256`, store with unique `(pact_id, milestone)` — wave · M · K-01 (#65, 2026-10-28)
 - [ ] **V-02** Pipeline: delivery-receipt check, evidence hash check — core · H · K-03 · FR-V2, FR-V3
 - [ ] **V-03** Provider-neutral LLM adapter (`models/llm.ts`): provider + model pinned in config, explicit effort where supported, structured output; no sampling params; refusal → no verdict; provider, model ID, effort + raw-output hash in the envelope — wave · M · V-01 · FR-V5
-- [ ] **V-04** `rules/document-translation.ts` deterministic rules, with partial `amount` — wave · H · V-03 · FR-V4
+- [x] **V-04** `rules/document-translation.ts` deterministic rules, with partial `amount` — wave · H · V-03 · FR-V4 (#65, 2026-10-28)
 - [ ] **V-05** `sign.ts`: verdict-v1 envelope + one attestation per pact — core · H · V-02 · FR-V8
 - [ ] **V-06** `submit.ts`: `record_verdict` / `release` via `/pact/submit` — wave · M · V-05, X-04
 - [ ] **V-07** `non-delivery.ts`: seller webhook challenge → DENY on timeout — wave · H · V-05 · FR-V6
@@ -102,6 +102,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-28 | #65 | K-01, K-02, K-04, K-14, V-01, V-04 → `[x]` | Lint + publish build (`source` export condition); every schema tested + TS↔Rust map; Merkle (odd nodes promoted, Accensa's 14 vectors pass), exact amounts, strict network config; Witness core vendored unmodified with its tests; verifier config/store/HTTP API (409 on duplicate verdicts); document.translation rules (pro-rata partials). 231 tests. |
 | 2026-10-28 | initial push | F-02, F-03 → `[x]` | Repo published to github.com/Pactwright with licenses, NOTICE, README, CONTRIBUTING, AGENTS.md and design docs. |
 | 2026-10-28 | scaffold | F-02…F-06, K-01, K-02 → `[~]` | pnpm workspace, 7 packages + verifier service with typed stubs; `schemas.ts` data model with 2 passing tests; typecheck passes. |
 | 2026-10-28 | scaffold | — | Repo scaffolded: structure, data models, stubs |
