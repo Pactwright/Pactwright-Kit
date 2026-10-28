@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@pactwright/core": "workspace:*",
-    "zod": "^4.1.0"
+    "zod": "^4.1.0",
+    "@witness/core": "workspace:*",
+    "hono": "^4.10.0",
+    "@hono/node-server": "^1.19.0"
   }
 }

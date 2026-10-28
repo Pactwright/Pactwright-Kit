@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "formula": "sha256(\"pactwright-delivery-v1:\" || pact_id || sha256(body)); header X-Pactwright-Delivery: sha256=<body hash>; sig=<base64 signature>",
+  "notes": "xdr(x) = XDR of the value's ScVal; integers big-endian; hex is lowercase",
+  "cases": [
+    {"name": "json body", "input": {"pact_id": "0101010101010101010101010101010101010101010101010101010101010101", "body_utf8": "{\"translated\":\"ola mundo\"}", "body_sha256": "cc4fa00fc26978ebd5053f023a926665d39f7482ca72e7ea4f44ec797ad633ca"}, "output": "f93efffd9dfc20a03f5b0bf921a2bdb1343f6fb67b321e00c4c39a52b246b52d", "signer_seed": "0505050505050505050505050505050505050505050505050505050505050505", "signer_public_key": "6e7a1cdd29b0b78fd13af4c5598feff4ef2a97166e3ca6f2e4fbfccd80505bf1", "signature": "abc0c72a5e6af031e57c3828cae56eaf657930472fec9dfe8215591a82bd10679f585de3a6f99909a87d021a6eb01e27faf2971a2948574e6d1d73c9947df907"}
+  ]
+}

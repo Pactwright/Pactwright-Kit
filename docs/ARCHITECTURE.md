@@ -187,14 +187,16 @@ pub struct Config {
 
 All domain prefixes differ from each other and from Witness's `conditional-release-verdict-v1:`.
 
+**Encoding:** `xdr(x)` is the XDR of the value's `ScVal`; integers are big-endian (`i128` = 16 bytes, two's complement); `‖` is byte concatenation; ed25519 signs the 32-byte digest. `condition_hash` vectors come from Pactwright-Kit (canonical JSON); the contract treats it as opaque bytes. Merkle odd-count handling is confirmed against Accensa's SDK in K-04.
+
 ### 4.4 Entrypoints
 
 | Function | Auth | Preconditions | Effect |
 |---|---|---|---|
 | `__constructor(admin, token, verifier, max_pact_ledgers)` | — | — | Stores `Config` |
 | `set_verifier(key)` | admin | — | Rotates the key **for new pacts only** (ADR-014) |
-| `open(params: OpenParams) → pact_id` (`OpenParams` = buyer, seller, cap, nonce, condition_hash, meter, silence, verdict_deadline, settle_deadline) | buyer | `cap > 0`; `buyer ≠ seller`; `now < verdict_deadline ≤ settle_deadline ≤ now + max_pact_ledgers`; `pact_id` unused | `token.transfer(buyer → pact, cap)`; snapshot `verifier`; TTL extended past `settle_deadline + GRACE` → `Funded` |
-| `record_verdict(pact_id, att, sig)` | none (signature is the authority) | `Funded`; not metered; `now ≤ verdict_deadline`; `att.pact_id`/`condition_hash` match; `att.amount ≤ cap`; `ed25519_verify(pact.verifier, msg, sig)` | ALLOW → `Allowed`, `allowed_amount = att.amount`; DENY → `Denied` |
+| `open(params: OpenParams) → pact_id` (`OpenParams` = buyer, seller, cap, nonce, condition_hash, meter, silence, verdict_deadline, settle_deadline) | buyer | `cap > 0`; `buyer ≠ seller`; `now < verdict_deadline ≤ settle_deadline ≤ now + max_pact_ledgers`; `pact_id` unused; **metered pacts rejected (`IsMetered`) until P7-01** | `token.transfer(buyer → pact, cap)`; snapshot `verifier`; TTL extended past `settle_deadline + GRACE` → `Funded` |
+| `record_verdict(pact_id, att, sig)` | none (signature is the authority) | `Funded`; not metered; `now ≤ verdict_deadline`; `att.pact_id`/`condition_hash` match; `opened_ledger ≤ att.issued_ledger ≤ now`; ALLOW: `0 < att.amount ≤ cap`, DENY: `att.amount = 0`; `ed25519_verify(pact.verifier, msg, sig)` (traps on a bad signature) | ALLOW → `Allowed`, `allowed_amount = att.amount`; DENY → `Denied` |
 | `settle(pact_id, actual)` | seller | `0 < actual ≤ allowed_amount`, `now ≤ settle_deadline`, and either `Allowed`, or `Funded ∧ not metered ∧ silence = Pay ∧ now > verdict_deadline` (then `allowed_amount = cap`) | `actual` → seller, `cap − actual` → buyer → `Settled` |
 | `close_meter(pact_id, units, sig)` | seller | `Funded`; metered; `now ≤ settle_deadline`; `ed25519_verify(meter_key, usage msg, sig)`; `units × unit_price ≤ cap` | Pays `units × unit_price`, returns the rest → `Settled` |
 | `release(pact_id)` | none | `Denied`; **or** `Funded ∧ not metered ∧ silence = Refund ∧ now > verdict_deadline`; **or** `(Funded ∨ Allowed) ∧ now > settle_deadline` | Full escrow → buyer → `Released` |
@@ -235,8 +237,9 @@ No unbounded data in instance storage.
 ### 4.9 M0 on-chain footprint
 M0 has no `pact` contract call. Money moves through the facilitator's `exact` scheme;
 refunds through `RefundVault.refund(payment_ref = pact_id, recipient = buyer, amount,
-paid_at_ledger, payment_amount, vdf_proof = None, nonce)`, signed by the seller. The
-`RefundVault` rejects a second refund for the same `payment_ref` (`AlreadyRefunded`).
+paid_at_ledger)` (pinned Accensa v0.2.0), signed by the seller: v0.2.0 requires the
+merchant's own auth, with no refund-only role. The `RefundVault` rejects a second refund for
+the same `payment_ref` (`AlreadyRefunded`); tested in `test/integration.rs`.
 
 ## 5. Flows
 
@@ -361,6 +364,7 @@ USDC trustline at startup. Keys come from KMS (B13).
 
 ### 6.5 Verifier service
 - `POST /v1/verdicts`: verify the delivery receipt → hash-check evidence → model reads into a strict zod schema (provider and model pinned in config, explicit reasoning effort where the provider supports it, structured output; no sampling parameters such as `temperature`) → **deterministic rules decide** (`rules/<condition kind>.ts`) → Witness verdict-v1 envelope (model ID, effort, hash of raw model output) → for M2, sign one `VerdictAttestation` and submit it via `/pact/submit`.
+- **Rules:** each condition kind has a pure rule set; criteria use Witness reason codes and Witness's `decide()` makes the decision. Witness's REVIEW outcome becomes DENY (no human review in the MVP). `document.translation` pays pro rata when fewer pages than `minPages` arrive (non-mandatory `ITEMS_MISMATCH`).
 - **A model refusal yields no verdict:** the pact falls back to its silence policy (escrow) or no refund decision (M0) instead of a guess.
 - **At most one attestation per `pact_id`** (unique key in its store). Disputes create new envelopes, never new attestations.
 - `GET /v1/envelopes/:sha256`, `GET /health` (public key).
@@ -368,7 +372,7 @@ USDC trustline at startup. Keys come from KMS (B13).
 
 ### 6.6 Indexer and anchorer (studio)
 - **Indexer:** Stellar RPC `getEvents` for `pact`, facilitator settlements to protected routes, and seller `RefundVault` refunds; ledger cursor; **backfill** from a history source when the cursor falls outside RPC retention; alert at 50% of retention.
-- **Anchorer:** **reconciles from the chain first**, then builds a sorted-pair Merkle tree of new leaves (≤ `get_max_batch_size()`, respecting `min_anchor_interval`), calls `ReceiptAnchor.anchor_batch`, stores per-leaf proofs. Certificates are `pending` until anchored.
+- **Anchorer:** **reconciles from the chain first**, then builds a sorted-pair Merkle tree of new leaves (≤ 1000 per batch in the pinned v0.2.0), calls `ReceiptAnchor.anchor_batch(root, count, period_start, period_end)` (v0.2.0 has no shards), stores per-leaf proofs. Certificates are `pending` until anchored.
 
 ### 6.7 MCP server
 `pactwright_find_sellers` · `pactwright_buy` · `pactwright_get_pact` · `pactwright_dispute` · `pactwright_get_certificate`.

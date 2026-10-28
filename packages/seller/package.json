@@ -4,10 +4,15 @@
   "type": "module",
   "license": "Apache-2.0",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
-    "test": "vitest run --root ../.. --dir ."
+    "test": "vitest run --root ../.. --dir .",
+    "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@pactwright/core": "workspace:*"
@@ -18,5 +23,8 @@
   },
   "peerDependencies": {
     "express": "^5.0.0"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

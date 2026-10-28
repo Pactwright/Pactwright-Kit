@@ -7,7 +7,8 @@ Each is credited here whether we use its code, its format or only its idea.
 Accensa (MIT / Apache-2.0)
   https://github.com/accensa/accensa-contracts  - RefundVault, ReceiptAnchor (pinned WASM)
   https://github.com/accensa/x402-facilitator-stellar - x402 facilitator, `pact` scheme
-  https://github.com/accensa/accensa-app - @accensa/sdk, indexer patterns
+  https://github.com/accensa/accensa-app - @accensa/sdk, indexer patterns; Merkle conformance
+  vectors (packages/core/test/vectors/accensa, MIT)
 
 Tollcraft (Apache-2.0 / MIT)
   https://github.com/Tollcraft/soroban-cost-linter - cost lint in CI
@@ -15,7 +16,8 @@ Tollcraft (Apache-2.0 / MIT)
 
 Witness (Apache-2.0)
   https://github.com/fabian416/witness - verdict-v1 envelope format, condition hashing,
-  "model reads, code decides" pattern; @witness/core vendored in pactwright-kit
+  "model reads, code decides" pattern; @witness/core vendored unmodified in
+  vendor/witness-core (commit 1f9a8e218244a3a97858378e85d4f63eb4912ca5)
 
 Ficha (MIT)
   https://github.com/beto-rocha-blockchain/ficha-stellar - the idea of refunding unused

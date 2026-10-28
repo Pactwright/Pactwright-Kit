@@ -7,16 +7,20 @@
     "node": ">=24"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "pnpm --filter @witness/core run typecheck && pnpm --filter @witness/core run build && tsc -p tsconfig.json",
     "test": "vitest run",
-    "lint": "echo 'lint: set up in ROADMAP K-01' && exit 0",
-    "format": "prettier --check ."
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "build": "pnpm -r --filter \"./packages/*\" run build"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.0",
     "@types/node": "^24.0.0",
     "prettier": "^3.6.0",
     "typescript": "^5.9.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "eslint": "^9.39.0",
+    "@eslint/js": "^9.39.0",
+    "typescript-eslint": "^8.46.0"
   }
 }
