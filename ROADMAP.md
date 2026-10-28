@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-28 |
-| Progress | **8 / 52 tasks (15%)** |
+| Progress | **10 / 52 tasks (19%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -15,7 +15,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 
 | Section | Tasks | Done | % |
 |---|---|---|---|
-| Foundations (this repo) | 7 | 2 | 29% |
+| Foundations (this repo) | 7 | 4 | 57% |
 | Phase 3 — Kit | 17 | 4 | 24% |
 | Phase 4 — Verifier | 11 | 2 | 18% |
 | Phase 7 — v1 | 10 | 0 | 0% |
@@ -29,8 +29,8 @@ Repo-level setup tasks.
 - [x] **F-03** Add `ROADMAP.md`, `AGENTS.md`, `CONTRIBUTING.md` (with the roadmap rule) and copies of the 4 design docs to each repo — core · T · F-02 · Done when: every repo states the roadmap rule. (pushed, 2026-10-28)
 - [~] **F-04** Labels (`Stellar Wave`, `complexity:*`, `area:*`, `good first issue`, `core-team-only`), issue template, PR template with a "ROADMAP.md updated" checkbox — core · T · F-02 · project_structure §7
 - [~] **F-05** `roadmap-check` CI workflow in all 3 repos: fails a PR that doesn't modify `ROADMAP.md` — core · M · F-02 · Done when: a PR without a roadmap change fails CI.
-- [~] **F-06** `CODEOWNERS` for core-team-only paths — core · T · F-02 · project_structure §7
-- [~] **F-07** OpenSSF Scorecard, Dependabot, branch protection (CI + review required) — core · T · F-02
+- [x] **F-06** `CODEOWNERS` for core-team-only paths — core · T · F-02 · project_structure §7 (#67, 2026-10-28)
+- [x] **F-07** OpenSSF Scorecard, Dependabot, branch protection (CI + review required) — core · T · F-02 (#67, 2026-10-28)
 - [ ] **F-14** `@accensa/sdk` is not published on npm (404 on 2026-10-28): publish it from `accensa-app` or vendor it into the kit — core · M · — · K-07 · Done when: `@pactwright/seller` can depend on it.
 
 ## Phase 3 — Kit
@@ -102,6 +102,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-28 | #67 | F-06, F-07 → `[x]` | README rewritten to explain the kit: why it exists, how the pieces fit (sequence diagram), per-package status (working / interface only / planned), how the verifier decides (model reads, code decides; `document.translation` criteria and pro-rata payment), HTTP API, core usage, configuration, FAQ, and a full License section (Apache-2.0 terms, why Apache-2.0, third-party licenses). Logo assets added. CODEOWNERS, Scorecard and branch protection are live. |
 | 2026-10-28 | scorecard + teams | F-06, F-07 → `[~]` | OpenSSF Scorecard workflow and badge; CODEOWNERS uses `@Pactwright/maintainers` / `@Pactwright/core`; branch-protection and Dependabot policy in CONTRIBUTING. Done once all three repos merge and protection is on (Pactwright-contracts#58). |
 | 2026-10-28 | #65 | K-01, K-02, K-04, K-14, V-01, V-04 → `[x]` | Lint + publish build (`source` export condition); every schema tested + TS↔Rust map; Merkle (odd nodes promoted, Accensa's 14 vectors pass), exact amounts, strict network config; Witness core vendored unmodified with its tests; verifier config/store/HTTP API (409 on duplicate verdicts); document.translation rules (pro-rata partials). 231 tests. |
 | 2026-10-28 | initial push | F-02, F-03 → `[x]` | Repo published to github.com/Pactwright with licenses, NOTICE, README, CONTRIBUTING, AGENTS.md and design docs. |
