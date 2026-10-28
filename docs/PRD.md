@@ -249,7 +249,7 @@ Priority: **P0** = MVP · **P1** = v1 · **P2** = later.
 ## 12. Open questions
 1. Can Pollar wallets sign Soroban auth entries for arbitrary contracts? (Only affects the add-on; MVP funds agents directly.)
 2. Can BookerBob group admin be a contract, or must the seller hold the key? (P2)
-3. Will Witness publish `@witness/core`, or do we keep vendoring it?
+3. Will Witness publish `@witness/core`, or do we keep vendoring it? Witness has not published `@witness/core` on npm (returns 404); we continue vendoring it under `vendor/witness-core` (ROADMAP P9-07).
 4. Who operates mainnet verifiers?
 5. Does `RefundVault` support a refund-only key role, or do sellers need KMS for the merchant key?
 6. What are the right default deadline lengths per condition kind?

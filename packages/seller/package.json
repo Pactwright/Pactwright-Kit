@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "@accensa/sdk": "workspace:*",
     "@pactwright/core": "workspace:*"
   },
   "devDependencies": {

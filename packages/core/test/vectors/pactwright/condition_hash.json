@@ -1,5 +1,62 @@
 {
   "version": 1,
   "formula": "Witness conditionHash(): sha256 of canonical JSON",
-  "cases": []
+  "cases": [
+    {
+      "name": "purchase condition",
+      "input": {
+        "condition": {
+          "version": "1",
+          "kind": "purchase",
+          "payer": "GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR",
+          "receiver": "GCATS5YOVB6ROX2WUNKGNQ2MP3GMXDMKSG2O4N5CLX3A6W4PZGZZI55U",
+          "receiverName": "Casa Hogar Electro",
+          "asset": { "code": "USDC", "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" },
+          "maxAmount": "290",
+          "category": "electrodomésticos",
+          "items": ["lavarropas"],
+          "window": { "notBefore": "2026-10-25T00:00:00Z", "notAfter": "2026-11-15T23:59:59Z" },
+          "settlement": { "role": "escrow_funded" },
+          "evidence": { "type": "invoice_photo", "mustShow": ["merchant name", "date", "items", "total"] },
+          "sourceText": "Crédito de 290 USDC para que Ana compre un lavarropas en Casa Hogar Electro; se paga a la tienda contra factura."
+        }
+      },
+      "canonical": "{\"asset\":{\"code\":\"USDC\",\"issuer\":\"GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5\"},\"category\":\"electrodomésticos\",\"evidence\":{\"mustShow\":[\"merchant name\",\"date\",\"items\",\"total\"],\"type\":\"invoice_photo\"},\"items\":[\"lavarropas\"],\"kind\":\"purchase\",\"maxAmount\":\"290\",\"payer\":\"GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR\",\"receiver\":\"GCATS5YOVB6ROX2WUNKGNQ2MP3GMXDMKSG2O4N5CLX3A6W4PZGZZI55U\",\"receiverName\":\"Casa Hogar Electro\",\"settlement\":{\"role\":\"escrow_funded\"},\"sourceText\":\"Crédito de 290 USDC para que Ana compre un lavarropas en Casa Hogar Electro; se paga a la tienda contra factura.\",\"version\":\"1\",\"window\":{\"notAfter\":\"2026-11-15T23:59:59Z\",\"notBefore\":\"2026-10-25T00:00:00Z\"}}",
+      "output": "2ba50f204a064200232c190027d6d3932c9ff627d01ae58d731de81f001dde87"
+    },
+    {
+      "name": "task condition",
+      "input": {
+        "condition": {
+          "version": "1",
+          "kind": "task",
+          "payer": "GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR",
+          "receiver": "GCATS5YOVB6ROX2WUNKGNQ2MP3GMXDMKSG2O4N5CLX3A6W4PZGZZI55U",
+          "receiverName": "Sasha",
+          "asset": { "code": "USDC", "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" },
+          "maxAmount": "2",
+          "task": { "title": "Hacer la cama", "doneWhen": ["la cama está tendida", "la almohada está en su lugar", "no hay ropa sobre la cama"] },
+          "window": { "notBefore": "2026-10-25T00:00:00Z", "notAfter": "2026-11-01T23:59:59Z" },
+          "settlement": { "role": "payee_prepaid" },
+          "evidence": { "type": "task_photo", "mustShow": ["the task done"] },
+          "sourceText": "2 USDC para Sasha cuando haga la cama, antes del domingo."
+        }
+      },
+      "canonical": "{\"asset\":{\"code\":\"USDC\",\"issuer\":\"GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5\"},\"evidence\":{\"mustShow\":[\"the task done\"],\"type\":\"task_photo\"},\"kind\":\"task\",\"maxAmount\":\"2\",\"payer\":\"GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR\",\"receiver\":\"GCATS5YOVB6ROX2WUNKGNQ2MP3GMXDMKSG2O4N5CLX3A6W4PZGZZI55U\",\"receiverName\":\"Sasha\",\"settlement\":{\"role\":\"payee_prepaid\"},\"sourceText\":\"2 USDC para Sasha cuando haga la cama, antes del domingo.\",\"task\":{\"doneWhen\":[\"la cama está tendida\",\"la almohada está en su lugar\",\"no hay ropa sobre la cama\"],\"title\":\"Hacer la cama\"},\"version\":\"1\",\"window\":{\"notAfter\":\"2026-11-01T23:59:59Z\",\"notBefore\":\"2026-10-25T00:00:00Z\"}}",
+      "output": "4d803fd7c8a2fdb880ce4e4c5ab7952032e72d89fccdd0250f4e87c4de4ec884"
+    },
+    {
+      "name": "document translation condition",
+      "input": {
+        "condition": {
+          "criteria": "meaning_preserved",
+          "kind": "document.translation",
+          "sourceLanguage": "es",
+          "targetLanguage": "en"
+        }
+      },
+      "canonical": "{\"criteria\":\"meaning_preserved\",\"kind\":\"document.translation\",\"sourceLanguage\":\"es\",\"targetLanguage\":\"en\"}",
+      "output": "200316035f8c3b5aabf99e3c7dc8c19d634fee2c822a1451179e226ed7d178f6"
+    }
+  ]
 }

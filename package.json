@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "typecheck": "pnpm --filter @witness/core run typecheck && pnpm --filter @witness/core run build && tsc -p tsconfig.json",
+    "typecheck": "pnpm --filter @witness/core run typecheck && pnpm --filter @witness/core run build && pnpm --filter @accensa/sdk run typecheck && pnpm --filter @accensa/sdk run build && pnpm --filter @pactwright/contracts-client run build && tsc -p tsconfig.json",
     "test": "vitest run",
     "lint": "eslint .",
     "format": "prettier --check .",
