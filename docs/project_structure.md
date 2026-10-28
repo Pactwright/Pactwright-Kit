@@ -295,5 +295,23 @@ The scaffold follows §3–5 and adds these files, which belong to the structure
 | studio | `lib/indexer/{index,cursor,sources,backfill}.ts`, `lib/anchorer/{index,reconcile,batch}.ts` | Indexer and anchorer split by responsibility |
 | studio | `playwright.config.ts`, `next.config.ts` | Tooling |
 
-Packages are consumed from source during development (`exports` → `src/index.ts`, Node 24 type
-stripping, `.ts` import extensions). A build step for npm publishing is decided in K-01/K-17.
+### Kit build and resolution (decided in K-01, #14)
+
+- Publishable packages (`core`, `contracts-client`, `adapters`, `agent`, `seller`, `mcp`, `cli`) export
+  `{ "source": "./src/index.ts", "types": "./dist/index.d.ts", "default": "./dist/index.js" }`.
+- Development, `pnpm typecheck` and Vitest resolve the **`source`** condition (`customConditions` in
+  `tsconfig.base.json`, `resolve.conditions` in `vitest.config.ts`), so nothing needs building first.
+- `pnpm build` runs `tsc -p tsconfig.build.json` per package in dependency order, emitting `dist/` with
+  `.ts` imports rewritten to `.js` (`rewriteRelativeImportExtensions`). Published tarballs contain `dist/` only.
+- `pnpm lint` runs ESLint (flat config, `typescript-eslint`); `vendor/` and generated bindings are ignored.
+- `vendor/witness-core` is type-checked with upstream's own compiler settings and builds declarations,
+  so Pactwright's stricter settings never require editing upstream files.
+
+### Further Kit additions (#14, #17, #27, #31, #34)
+
+| Path | Purpose |
+|---|---|
+| `scripts/fetch-vectors.sh <ref>` | Pins Pactwright-contracts `test-vectors/` into `packages/core/test/vectors/pactwright/` (`COMMIT` records the ref) |
+| `packages/core/test/vectors/accensa/` | Accensa's Merkle conformance vectors (MIT), copied unchanged |
+| `vendor/witness-core/{UPSTREAM.md,NOTICE,LICENSE,tsconfig*.json}` | Provenance and the upstream-settings build |
+| `services/verifier/test/` | Verifier tests (rules, HTTP API, store, config) |

@@ -1,6 +1,26 @@
 /**
  * Shared data model. Mirrors the Rust types in pactwright-contracts/contracts/pact/src/types.rs
  * and ARCHITECTURE.md §7.2. Change both together.
+ *
+ * TypeScript ↔ Rust field map (on-chain types only):
+ *
+ * | TypeScript                      | Rust (`types.rs`)                 | Notes                          |
+ * |---------------------------------|-----------------------------------|--------------------------------|
+ * | VerdictAttestation.pactId       | VerdictAttestation.pact_id        | BytesN<32> ↔ lowercase hex     |
+ * | VerdictAttestation.conditionHash| VerdictAttestation.condition_hash | BytesN<32> ↔ hex               |
+ * | VerdictAttestation.envelopeHash | VerdictAttestation.envelope_hash  | BytesN<32> ↔ hex               |
+ * | VerdictAttestation.verdict      | VerdictAttestation.verdict        | "ALLOW"/"DENY" ↔ Allow=1/Deny=2|
+ * | VerdictAttestation.amount       | VerdictAttestation.amount         | i128 stroops ↔ decimal string  |
+ * | VerdictAttestation.issuedLedger | VerdictAttestation.issued_ledger  | u32                            |
+ * | UsageVoucher.pactId             | UsageVoucher.pact_id              | BytesN<32> ↔ hex               |
+ * | UsageVoucher.units              | UsageVoucher.units                | u32 (cumulative)               |
+ * | PactTerms.cap                   | Pact.cap / OpenParams.cap         | i128 stroops ↔ decimal USDC    |
+ * | PactTerms.nonce                 | OpenParams.nonce                  | u64 ↔ decimal string           |
+ * | PactTerms.metered               | Pact.meter                        | Metering::Units(_) ↔ true      |
+ * | PactTerms.silence               | Pact.silence                      | "refund"/"pay" ↔ Refund=1/Pay=2|
+ * | PactTerms.verdictDeadline       | Pact.verdict_deadline             | u32 ledger                     |
+ * | PactTerms.settleDeadline        | Pact.settle_deadline              | u32 ledger                     |
+ * | PactTerms.verifier              | Pact.verifier                     | ed25519 public key, hex        |
  */
 import { z } from "zod";
 
@@ -12,7 +32,8 @@ export const StellarAddress = z.string().regex(/^[GC][A-Z2-7]{55}$/, "expected a
 export const DecimalAmount = z.string().regex(/^\d+(\.\d{1,7})?$/, "expected a decimal amount");
 /** Stroops (i128 on-chain) as a base-10 string. */
 export const Stroops = z.string().regex(/^-?\d+$/, "expected an integer amount in stroops");
-export const LedgerSeq = z.number().int().nonnegative();
+/** Ledger sequence (u32 on-chain). */
+export const LedgerSeq = z.number().int().nonnegative().max(4_294_967_295);
 
 // ---------- enums ----------
 export const ModeSchema = z.enum(["exact-refund", "escrow"]);
@@ -76,7 +97,7 @@ export const VerdictAttestationSchema = z.object({
 
 export const UsageVoucherSchema = z.object({
   pactId: Hex64,
-  units: z.number().int().nonnegative(),
+  units: z.number().int().nonnegative().max(4_294_967_295),
 });
 
 /** Parsed `X-Pactwright-Delivery` header: `sha256=<body hash>; sig=<ed25519 base64>`. */
