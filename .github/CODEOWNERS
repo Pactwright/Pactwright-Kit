@@ -1,5 +1,7 @@
-*                                       @mallison031
-/packages/core/src/hashing.ts           @mallison031
-/packages/seller/src/delivery.ts        @mallison031
-/services/verifier/src/pipeline.ts      @mallison031
-/services/verifier/src/sign.ts          @mallison031
+# Owners (ROADMAP F-06). Core-team-only paths are never labelled `Stellar Wave`.
+*                                       @Pactwright/maintainers
+/packages/core/src/hashing.ts           @Pactwright/core
+/packages/seller/src/delivery.ts        @Pactwright/core
+/services/verifier/src/pipeline.ts      @Pactwright/core
+/services/verifier/src/sign.ts          @Pactwright/core
+/vendor/                                @Pactwright/core

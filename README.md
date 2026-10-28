@@ -2,6 +2,9 @@
 
 **SDK, MCP server, CLI and verifier for Pactwright — accountable AI-agent purchases on Stellar.**
 
+[![ci](https://github.com/Pactwright/Pactwright-Kit/actions/workflows/ci.yml/badge.svg)](https://github.com/Pactwright/Pactwright-Kit/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Pactwright/Pactwright-Kit/badge)](https://scorecard.dev/viewer/?uri=github.com/Pactwright/Pactwright-Kit)
+
 > Status: scaffold. See [`ROADMAP.md`](ROADMAP.md).
 
 | Package | Purpose |
