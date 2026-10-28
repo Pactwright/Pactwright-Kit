@@ -3,8 +3,8 @@
   "formula": "u64_be(sha256(utf8(idempotency_key))[0..8])",
   "notes": "output is the u64 as a decimal string",
   "cases": [
-    {"name": "key """, "input": {"idempotency_key": ""}, "output": "16406829232824261652"},
-    {"name": "key "order-1"", "input": {"idempotency_key": "order-1"}, "output": "842140288160000396"},
-    {"name": "key "req-7f3a9c"", "input": {"idempotency_key": "req-7f3a9c"}, "output": "9360324440296116344"}
+    {"name": "key \"\"", "input": {"idempotency_key": ""}, "output": "16406829232824261652"},
+    {"name": "key \"order-1\"", "input": {"idempotency_key": "order-1"}, "output": "842140288160000396"},
+    {"name": "key \"req-7f3a9c\"", "input": {"idempotency_key": "req-7f3a9c"}, "output": "9360324440296116344"}
   ]
 }

@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "@stellar/stellar-base": "^15.0.0",
     "zod": "^4.1.0"
   },
   "files": [

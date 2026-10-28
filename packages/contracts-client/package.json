@@ -16,5 +16,9 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "@stellar/stellar-sdk": "^16.4.1",
+    "buffer": "6.0.3"
+  }
 }
