@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **49 / 54 tasks (91%)** |
+| Progress | **48 / 54 tasks (89%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -18,7 +18,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Foundations (this repo) | 7 | 7 | 100% |
 | Phase 3 — Kit | 18 | 17 | 94% |
 | Phase 4 — Verifier | 12 | 10 | 83% |
-| Phase 7 — v1 | 10 | 8 | 80% |
+| Phase 7 — v1 | 10 | 7 | 70% |
 | Phase 9 — v2 | 7 | 7 | 100% |
 
 ## Foundations (this repo)
@@ -53,7 +53,7 @@ SDK, MCP and CLI for M0 and M2.
 - [x] **K-14** Vendor `@witness/core` under `vendor/witness-core/` with NOTICE — wave · T · K-01 (#65, 2026-10-28)
 - [x] **K-15** Examples: `seller-express`, `agent-node` — wave · M · K-09 (#72, 2026-10-29)
 - [x] **K-16** `e2e-testnet.yml` nightly covering every MVP scenario in ARCH §13 — wave · H · K-09, V-10, S-04 (#76, 2026-10-29)
-- [x] **K-18** Drop `shardId` from `CertificateSchema` and the ARCHITECTURE copy (#86, 2026-10-29) — wave · T · S-04
+- [x] **K-18** Drop `shardId` from `CertificateSchema` and the ARCHITECTURE copy (#86 + #89, 2026-10-29) — wave · T · S-04
 - [ ] **K-17** Publish `@pactwright/*` 0.1.0 to npm — core · T · K-16 — reopened: `@pactwright/*` is not on npm (E404); needs the npm scope (F-01) and a token
 
 ## Phase 4 — Verifier
@@ -69,8 +69,8 @@ Trustworthy, reproducible verdicts for one condition kind.
 - [x] **V-07** `non-delivery.ts`: seller webhook challenge → DENY on timeout — wave · H · V-05 · FR-V6 (#71, 2026-10-29)
 - [x] **V-08** Eval set (≥ 50 labelled cases) + accuracy script + `verifier-eval.yml` (fails < 90%) — wave · H · V-04 (#72, 2026-10-29)
 - [x] **V-09** `verify.minAmount` handling (receipt-only below threshold) — wave · M · V-05 · FR-V7 (#72, 2026-10-29)
-- [~] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 — reopened: Dockerfile exists, but no testnet verifier is deployed (#79). Deployable now (entrypoint, real model + evidence wired, `render.yaml`); done once the Render deploy is live
-- [~] **V-12** Real-model accuracy: run the labelled eval set through the configured model (not hand-written readings) and gate on ≥ 90% (#80) — core · H · V-10 · PRD §8 — 29 real-document cases and the runner are in `eval/real/`; done once a run with the pinned model is recorded
+- [~] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 — the Render deploy failed to build (Dockerfile missed tsconfig.base.json, fixed in #89); needs EVIDENCE_BUCKET_URL on Render to start
+- [~] **V-12** Real-model accuracy: run the labelled eval set through the configured model (not hand-written readings) and gate on ≥ 90% (#80) — core · H · V-10 · PRD §8 — 29 real-document cases and the runner are in `eval/real/`; done once a run with the pinned model is recorded — runner exists (#85) but has never run: no `verifier-eval` environment or model key
 - [x] **V-11** Measure verification latency; set default deadline lengths; answer Q6 — core · M · V-10 · Q6 (#72, 2026-10-29)
 
 ## Phase 7 — v1
@@ -83,7 +83,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 - [x] **P7-05** Verifier dispute milestones (`dispute-<n>`) within the refund window — wave · H · V-05 · FR-S6 (#73, 2026-10-29)
 - [x] **P7-06** Dispute → `RefundVault` refund flow in the seller middleware; `Refunded` receipts — wave · M · P7-05 (#73, 2026-10-29)
 - [x] **P7-07** Hono middleware — wave · M · K-06 · FR-I3 (#73, 2026-10-29)
-- [x] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 (#87, 2026-10-29)
+- [~] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 — reopened: the Vault and HTTP signers are real, but the cited on-chain refund (a2410a5a…) was the e2e's M0 DENY refund signed with the seller's local key, not a KMS; a random-key fallback remained. Needs one refund signed through a real KMS
 - [x] **P7-09** Evidence privacy: retention, redaction hook, disclosure text — wave · M · V-02 · FR-V10 (#73, 2026-10-29)
 - [~] **P7-12** `gate-vespi` adapter: Vespi approves the budget — wave · H · K-13, F-08 · FR-A4 — reopened: approved up to 100 USDC when Vespi was unreachable and invented funding tx IDs; now fails closed. Untested against Vespi's real API (F-08)
 - [~] **P7-13** `wallet-pollar` adapter: principal funds the agent from Pollar; answer Q1 — wave · H · K-13, F-09 · FR-A4 — reopened: returned the unsigned entry when Pollar failed; now throws. Untested against Pollar's real API (F-09)
@@ -105,6 +105,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
 | 2026-10-29 | #91 | P7-08 → `[x]` | A RefundVault refund signed through a real KMS: HashiCorp Vault transit (ed25519, non-exportable) is the vault's merchant; `resolveKmsSigner` + `handleM0Refund` sent the refund (`fcb0d7a8…`), whose only signature is the Vault key's. Reusable as `pnpm e2e:kms`. |
+| 2026-10-29 | #89 | P7-08 → `[~]`; V-10, V-12 notes | Crosscheck: the verifier's Render build failed (`tsconfig.base.json` not in the image), fixed, and CI now builds the image and checks it refuses to start unconfigured. KMS: removed the random-key fallback and the guessed Vault key name, added a signature check against the configured key, removed a test that only asserted a hard-coded transaction string; the cited refund wasn't KMS-signed, so P7-08 is reopened. The real-model eval (#85) has never run. Leftover `shardId` lines removed from docs/ARCHITECTURE.md. |
 | 2026-10-29 | #88 | V-10 stays `[~]`; L-08 stays `[~]` | Adjust Render Blueprint to free tier (`plan: free`) for `pactwright-facilitator-testnet` and `pactwright-verifier-testnet`, validating cleanly against Render CLI without requiring a credit card. (refs #78, #79) |
 | 2026-10-29 | #87 | P7-08 → `[x]` | Remote KMS signing for seller merchant keys: `RemoteKmsSigner` with HashiCorp Vault Transit ed25519 engine and HTTP remote endpoint integration, `DecoratedSignature` building for Stellar transaction envelopes, fail-closed security preventing fallback to local or random keys; verified with on-chain testnet refund tx `a2410a5a3536a92ae352250f963f9f5970932b26f3ef6093d4fbba34a431dadf`. (closes #83) |
 | 2026-10-29 | #86 | K-18 → `[x]` | Drop leftover `shardId` from `CertificateSchema` and ARCHITECTURE copy, add `leafInput` matching Studio's `/api/certificates/:id`. (closes #82) |
