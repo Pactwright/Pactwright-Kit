@@ -19,3 +19,18 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  # The image Render deploys (render.yaml): build it on every PR so a missing file in the
+  # Docker context fails here instead of in production.
+  verifier-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the verifier image
+        run: docker build -f services/verifier/Dockerfile -t pactwright-verifier:ci .
+      - name: Refuses to start without configuration
+        run: |
+          set +e
+          out=$(docker run --rm pactwright-verifier:ci 2>&1); code=$?
+          echo "$out"
+          test "$code" -ne 0 && echo "$out" | grep -q "VERIFIER_SECRET_KEY is not set"

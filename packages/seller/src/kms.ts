@@ -102,6 +102,11 @@ export class RemoteKmsSigner implements KmsSigner {
     if (!sig || sig.length !== 64) {
       throw new Error(`Remote KMS signature invalid: expected 64 bytes, received ${sig?.length}`);
     }
+    // A misconfigured KMS (wrong key, wrong algorithm) must fail here, not as a rejected transaction.
+    const key = Keypair.fromPublicKey(await this.getPublicKey());
+    if (!key.verify(Buffer.from(data), Buffer.from(sig))) {
+      throw new Error("Remote KMS returned a signature that doesn't verify against the configured public key");
+    }
     return sig;
   }
 
@@ -270,9 +275,8 @@ export function resolveKmsSigner(options?: KmsSignerOptions): KmsSigner {
 
   // 2. HashiCorp Vault Transit Engine
   if (kmsProvider === "vault" || vaultAddr || (kmsKeyId && kmsKeyId.startsWith("vault:"))) {
-    const keyName =
-      options?.vaultKeyName ??
-      (kmsKeyId ? kmsKeyId.replace(/^vault:(transit\/keys\/)?/, "") : "merchant-key");
+    const keyName = options?.vaultKeyName ?? (kmsKeyId ? kmsKeyId.replace(/^vault:(transit\/keys\/)?/, "") : undefined);
+    if (!keyName) throw new Error("Vault KMS needs the key name: set KMS_KEY_ID=vault:<key> or vaultKeyName");
     return RemoteKmsSigner.fromVault({
       vaultAddr,
       vaultToken: options?.vaultToken ?? env.VAULT_TOKEN,
@@ -309,6 +313,8 @@ export function resolveKmsSigner(options?: KmsSignerOptions): KmsSigner {
     return new LocalKeypairSigner(localSecret);
   }
 
-  // 6. Ephemeral keypair fallback for local tests when NO KMS is configured
-  return new LocalKeypairSigner(Keypair.random().secret());
+  // 6. Nothing configured: refuse. A random key would sign refunds nobody can verify (P7-08).
+  throw new Error(
+    "No seller signing key configured: set KMS_KEY_ID with VAULT_ADDR or KMS_ENDPOINT, or SELLER_SECRET_KEY for development",
+  );
 }
