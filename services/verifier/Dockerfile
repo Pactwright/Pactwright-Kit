@@ -7,7 +7,8 @@ ENV NODE_ENV=production
 ENV PORT=10000
 
 # Install dependencies and build project
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+# Every package build extends tsconfig.base.json; without it tsc fails (TS5083).
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tsconfig.base.json ./
 COPY packages/ ./packages/
 COPY services/ ./services/
 COPY vendor/ ./vendor/
