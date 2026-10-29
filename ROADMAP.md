@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #95 | — (V-10) | Envelope references pointed at a nonexistent verifier.pactwright.dev and envelopes lived in memory, so references broke on every restart. They now point at the service's own URL (VERIFIER_PUBLIC_URL, else RENDER_EXTERNAL_URL) and are kept in Postgres (`verifier_envelopes`, one row per pact and milestone); production refuses to start without a database. |
 | 2026-10-29 | #94 | V-10 → `[x]` | Live on testnet: the hosted verifier read evidence from Pactwright/pactwright-evidence with its model, signed ALLOW 1 USDC at issued_ledger 5453756, and `record_verdict` accepted it (pact 40725564…, record_verdict 0225f78b…, settle 1f4ab38c…). Reusable as `pnpm e2e:hosted-verifier`. |
 | 2026-10-29 | verifier ledger | V-10 stays `[~]` | The hosted verifier stamped escrow attestations with ledger 100, so `record_verdict` would reject them; it now reads the latest ledger from STELLAR_RPC_URL and refuses to sign without one. |
 | 2026-10-29 | #92 | V-12 → `[x]` | Real-model eval: 29/29 (100%) on the labelled `document.translation` cases through the full pipeline with Google `gemini-3.5-flash-lite` (run 40897633766). Got there by fixing the empty base URL, adding a request timeout (a run hung 35 min) and 429/503 retries. The Render verifier now uses the same model config. |
