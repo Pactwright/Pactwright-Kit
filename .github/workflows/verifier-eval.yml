@@ -1,12 +1,19 @@
 name: verifier-eval
-# verifier accuracy; fails below threshold (ROADMAP V-08)
+# Two checks (ROADMAP V-08, V-12):
+# - rules: scores the rules on hand-written readings; cheap, runs on every PR.
+# - real-model: runs the labelled documents through the configured model; costs money, so it runs
+#   only on demand and weekly. Fails below 90% accuracy.
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
 
 jobs:
   run:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,3 +26,32 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
       - run: node services/verifier/eval/run.ts
+
+  real-model:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    environment: verifier-eval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+      - name: Real-model eval
+        env:
+          VERIFIER_PROVIDER: ${{ vars.VERIFIER_PROVIDER }}
+          VERIFIER_MODEL: ${{ vars.VERIFIER_MODEL }}
+          VERIFIER_EFFORT: ${{ vars.VERIFIER_EFFORT }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          VERIFIER_LLM_API_KEY: ${{ secrets.VERIFIER_LLM_API_KEY }}
+        run: node services/verifier/eval/real/run.ts --out real-model-report.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-model-report
+          path: real-model-report.json
+          if-no-files-found: ignore

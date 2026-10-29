@@ -87,8 +87,21 @@ export function decideDocumentTranslation(
   return { verdict: "ALLOW", amount, criteria, reasons, policyVersion: POLICY_VERSION };
 }
 
+const instructions = [
+  "The first evidence item is the source document and the last is the document delivered as its translation.",
+  "If there is only one item, it is the delivered document.",
+  "Pages are introduced by lines like `=== Page N ===`; a document without markers is one page.",
+  "Report about the delivered document only:",
+  "- detectedLanguage: ISO 639-1 code of its main language (empty string if it has no text);",
+  "- pageCount: pages that contain text;",
+  "- isTranslationOfSource: true only if it renders the source's content in another language;",
+  "- untranslatedSegments: sentences left in the source's language;",
+  "- notes: one short sentence.",
+].join("\n");
+
 export const documentTranslation: RuleSet<typeof modelOutput> = {
   kind: "document.translation",
   modelOutput,
+  instructions,
   decide: decideDocumentTranslation,
 };

@@ -20,6 +20,8 @@ export interface RuleSet<ModelOutput extends z.ZodType = z.ZodType> {
   kind: string;
   /** Structured output the model must return. */
   modelOutput: ModelOutput;
+  /** How the model should read the evidence for this kind; sent ahead of the condition. */
+  instructions?: string;
   /** Pure function: same inputs, same decision. */
   decide(output: z.infer<ModelOutput>, condition: Record<string, unknown>, capStroops: bigint): RuleDecision;
 }
