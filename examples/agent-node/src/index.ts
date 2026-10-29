@@ -6,6 +6,7 @@ import {
   createPactwright,
   type Pact,
   type PactwrightConfig,
+  type PaymentProvider,
 } from "@pactwright/agent";
 import {
   DiscoveryBazaar,
@@ -21,6 +22,8 @@ export async function runAgentBuyer(options?: {
   sellerAddress?: string;
   sellerUrl?: string;
   targetLang?: string;
+  /** Signs the x402 payment. Required: `buy` never sends a payment header that pays nothing. */
+  payment?: PaymentProvider;
   fetchImpl?: typeof fetch;
 }): Promise<Pact> {
   const secret = process.env.AGENT_SECRET_KEY;
@@ -62,6 +65,7 @@ export async function runAgentBuyer(options?: {
     wallet,
     verifierUrl: process.env.VERIFIER_URL ?? "https://verifier.pactwright.dev",
     facilitatorUrl: network.facilitatorUrl,
+    ...(options?.payment ? { payment: options.payment } : {}),
     fetchImpl: options?.fetchImpl,
     adapters: {
       discovery,

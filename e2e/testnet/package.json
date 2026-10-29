@@ -1,0 +1,14 @@
+{
+  "name": "@pactwright/e2e-testnet",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@pactwright/contracts-client": "workspace:*",
+    "@pactwright/core": "workspace:*",
+    "@pactwright/seller": "workspace:*",
+    "@pactwright/verifier": "workspace:*",
+    "@stellar/stellar-sdk": "^16.4.1"
+  }
+}

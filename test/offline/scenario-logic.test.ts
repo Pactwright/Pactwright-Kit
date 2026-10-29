@@ -1,9 +1,10 @@
 /**
- * End-to-end integration test suite covering every scenario in ARCHITECTURE §13:
+ * Offline checks of the hook and receipt logic behind every scenario in ARCHITECTURE §13. No
+ * chain access: refunds and settles use injected submitters. The real testnet run is
+ * `e2e/testnet` (ROADMAP K-16, L-01).
  * - M0 ALLOW, DENY, non-delivery
  * - M2 ALLOW, DENY, silence
  * - Dispute -> Refund
- * (ROADMAP K-16, L-01)
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { Keypair, receiptLeaf } from "@pactwright/core";
@@ -11,8 +12,12 @@ import { handleM0Refund, clearRefundedRefs } from "../../packages/seller/src/hoo
 import { handleAutoSettle } from "../../packages/seller/src/hooks/settle.ts";
 import { handleDisputeRefund } from "../../packages/seller/src/hooks/dispute.ts";
 
-describe("E2E Scenarios (ARCHITECTURE §13, ROADMAP K-16, L-01)", () => {
+describe("Scenario logic, offline (ARCHITECTURE §13)", () => {
   const buyer = Keypair.random();
+  const refundOptions = {
+    refundVaultId: "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+    submit: async () => ({ txHash: "ef".repeat(32), ledger: 300 }),
+  };
 
   beforeEach(() => {
     clearRefundedRefs();
@@ -40,7 +45,8 @@ describe("E2E Scenarios (ARCHITECTURE §13, ROADMAP K-16, L-01)", () => {
       buyer: buyer.publicKey(),
       price: "1.00",
       verdict: "deny",
-    });
+      paidAtLedger: 100,
+    }, refundOptions);
     expect(refundRes.refunded).toBe(true);
     expect(parseFloat(refundRes.refundAmount)).toBe(1);
   });
@@ -53,7 +59,8 @@ describe("E2E Scenarios (ARCHITECTURE §13, ROADMAP K-16, L-01)", () => {
       buyer: buyer.publicKey(),
       price: "0.50",
       verdict: "deny",
-    });
+      paidAtLedger: 100,
+    }, refundOptions);
     expect(refundRes.refunded).toBe(true);
     expect(parseFloat(refundRes.refundAmount)).toBe(0.5);
   });
@@ -71,7 +78,7 @@ describe("E2E Scenarios (ARCHITECTURE §13, ROADMAP K-16, L-01)", () => {
         verdict: "allow",
         allowedAmount: "1.00",
       },
-      { fetchImpl: mockFetch },
+      { fetchImpl: mockFetch, facilitatorUrl: "https://facilitator.example" },
     );
 
     expect(settleRes.settled).toBe(true);
@@ -116,7 +123,7 @@ describe("E2E Scenarios (ARCHITECTURE §13, ROADMAP K-16, L-01)", () => {
       verdict: "deny",
       envelopeHash: "ee".repeat(32),
       ledger: 120,
-    });
+    }, refundOptions);
     expect(disputeRes.refunded).toBe(true);
     expect(parseFloat(disputeRes.refundAmount)).toBe(1);
     expect(disputeRes.receiptLeaf).toMatch(/^[0-9a-fA-F]{64}$/);

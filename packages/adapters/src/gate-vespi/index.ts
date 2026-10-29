@@ -26,10 +26,8 @@ export class GateVespi implements Gate {
 
     // Auto-approve if amount is below configured threshold
     if (this.autoApproveBelow !== undefined && amountNum <= this.autoApproveBelow) {
-      return {
-        approved: true,
-        fundingTx: `tx_vespi_auto_${Date.now()}`,
-      };
+      // Auto-approval moves no money, so there is no funding transaction.
+      return { approved: true };
     }
 
     // Call Vespi kernel API
@@ -57,16 +55,10 @@ export class GateVespi implements Gate {
       const isApproved = data.approved === true || data.status === "approved";
       return {
         approved: isApproved,
-        fundingTx: data.funding_tx ?? (isApproved ? `tx_vespi_${Date.now()}` : undefined),
+        ...(isApproved && data.funding_tx ? { fundingTx: data.funding_tx } : {}),
       };
     } catch {
-      // In local/test mode without API endpoint, approve amounts <= 100 USDC
-      if (amountNum <= 100) {
-        return {
-          approved: true,
-          fundingTx: `tx_vespi_mock_${Date.now()}`,
-        };
-      }
+      // Fail closed: if Vespi can't be reached, the budget is not approved.
       return { approved: false };
     }
   }

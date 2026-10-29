@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **49 / 52 tasks (94%)** |
+| Progress | **44 / 52 tasks (85%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -16,9 +16,9 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Section | Tasks | Done | % |
 |---|---|---|---|
 | Foundations (this repo) | 7 | 7 | 100% |
-| Phase 3 — Kit | 17 | 14 | 82% |
+| Phase 3 — Kit | 17 | 12 | 71% |
 | Phase 4 — Verifier | 11 | 11 | 100% |
-| Phase 7 — v1 | 10 | 10 | 100% |
+| Phase 7 — v1 | 10 | 7 | 70% |
 | Phase 9 — v2 | 7 | 7 | 100% |
 
 ## Foundations (this repo)
@@ -43,13 +43,13 @@ SDK, MCP and CLI for M0 and M2.
 - [x] **K-04** `core/merkle.ts`, `amounts.ts`, `network.ts` (fails on incomplete config) — wave · M · K-02 (#65, 2026-10-28)
 - [x] **K-05** `contracts-client` generated from release bindings — wave · T · C-18 (#68, 2026-10-29)
 - [x] **K-06** `seller`: 402 builder, Express middleware, signed `X-Pactwright-Delivery`, refuse terminal pacts, startup checks — core · H · K-03 · FR-P1, FR-V2 (#69, 2026-10-29)
-- [~] **K-07** `seller` hooks: `createSettleHook()`, M0 `RefundVault.refund` on DENY/partial, M2 auto-settle on ALLOW — wave · H · K-06, C-15 · FR-S5 — reopened: `handleM0Refund` never submits `RefundVault.refund`; it returns a simulated tx hash
-- [x] **K-08** `agent`: client, M0 `buy`, idempotency → nonce, `await`, `certificate` — core · H · K-03 · FR-P2, FR-P5 (#70, 2026-10-29)
-- [x] **K-09** `agent`: M2 `buy` via the `pact` scheme — core · H · K-08, X-03 (#70, 2026-10-29)
+- [x] **K-07** `seller` hooks: `createSettleHook()`, M0 `RefundVault.refund` on DENY/partial, M2 auto-settle on ALLOW — wave · H · K-06, C-15 · FR-S5 (#75, 2026-10-29)
+- [~] **K-08** `agent`: client, M0 `buy`, idempotency → nonce, `await`, `certificate` — core · H · K-03 · FR-P2, FR-P5 — reopened: `buy` invented payment IDs (`tx_m0_<pact_id>`) and sent no payment; it now requires a payment provider. The built-in x402 exact payment is still to do
+- [~] **K-09** `agent`: M2 `buy` via the `pact` scheme — core · H · K-08, X-03 — reopened: signed a plain string instead of a Soroban auth entry for `pact.open`; needs the facilitator `pact` scheme (X-03)
 - [x] **K-10** `agent/accounts.ts`: create agent with sponsored reserves + USDC trustline; top-up — wave · H · K-08 · FR-A1…A3 (#70, 2026-10-29)
 - [x] **K-11** MCP server with `find_sellers`, `buy`, `get_pact`, `dispute`, `get_certificate` — wave · H · K-09 · FR-I2 (#70, 2026-10-29)
 - [x] **K-12** CLI: `verify`, `pact`, `agent-create`, `agent-topup` — wave · M · K-10 · FR-V9 (#70, 2026-10-29)
-- [x] **K-13** Adapters: `types.ts`, `discovery-bazaar`, `reputation-identity`, `gate-manual`, `wallet-keypair`, `verifier-witness` — wave · M · K-02 · ARCH §8.6 (#69, 2026-10-29)
+- [~] **K-13** Adapters: `types.ts`, `discovery-bazaar`, `reputation-identity`, `gate-manual`, `wallet-keypair`, `verifier-witness` — wave · M · K-02 · ARCH §8.6 — reopened: `wallet-keypair.signAuthEntry` signs raw entry bytes, not the Soroban authorization preimage, so the network would reject it
 - [x] **K-14** Vendor `@witness/core` under `vendor/witness-core/` with NOTICE — wave · T · K-01 (#65, 2026-10-28)
 - [x] **K-15** Examples: `seller-express`, `agent-node` — wave · M · K-09 (#72, 2026-10-29)
 - [~] **K-16** `e2e-testnet.yml` nightly covering every MVP scenario in ARCH §13 — wave · H · K-09, V-10, S-04 — reopened: the workflow ran in-memory tests and printed hard-coded PASS rows with fake links; no testnet transaction was ever sent
@@ -81,10 +81,10 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 - [x] **P7-05** Verifier dispute milestones (`dispute-<n>`) within the refund window — wave · H · V-05 · FR-S6 (#73, 2026-10-29)
 - [x] **P7-06** Dispute → `RefundVault` refund flow in the seller middleware; `Refunded` receipts — wave · M · P7-05 (#73, 2026-10-29)
 - [x] **P7-07** Hono middleware — wave · M · K-06 · FR-I3 (#73, 2026-10-29)
-- [x] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 (#73, 2026-10-29)
+- [~] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 — reopened: with `KMS_KEY_ID` set it signed with a random key; it now throws unless a remote signer is supplied. No KMS client yet
 - [x] **P7-09** Evidence privacy: retention, redaction hook, disclosure text — wave · M · V-02 · FR-V10 (#73, 2026-10-29)
-- [x] **P7-12** `gate-vespi` adapter: Vespi approves the budget — wave · H · K-13, F-08 · FR-A4 (#73, 2026-10-29)
-- [x] **P7-13** `wallet-pollar` adapter: principal funds the agent from Pollar; answer Q1 — wave · H · K-13, F-09 · FR-A4 (#73, 2026-10-29)
+- [~] **P7-12** `gate-vespi` adapter: Vespi approves the budget — wave · H · K-13, F-08 · FR-A4 — reopened: approved up to 100 USDC when Vespi was unreachable and invented funding tx IDs; now fails closed. Untested against Vespi's real API (F-08)
+- [~] **P7-13** `wallet-pollar` adapter: principal funds the agent from Pollar; answer Q1 — wave · H · K-13, F-09 · FR-A4 — reopened: returned the unsigned entry when Pollar failed; now throws. Untested against Pollar's real API (F-09)
 
 ## Phase 9 — v2
 
@@ -102,6 +102,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #75 | K-07 → `[x]`; K-08, K-09, K-13, P7-08, P7-12, P7-13 → `[~]` | Real testnet e2e (`e2e/testnet`, `pnpm e2e:testnet`): all 7 MVP scenarios as 14 real transactions on the deployed `pact` with testnet USDC and a fresh RefundVault, driven by the Kit's hashing, verifier rules and signing, contract client and seller hooks; Kit `pact_id` checked against the contract on every `open`. Seller refund/settle hooks send real transactions. Verifier now verifies the seller's delivery-receipt signature (FR-V2), fails closed without a configured model or key, and no longer lets delivery text trigger a refusal. Removed every invented transaction hash and fail-open fallback (KMS random key, Vespi auto-approve on error, Pollar unsigned entry, agent `buy`, account hashes of unsent transactions). The model ID must now be configured (no hard-coded default). Nightly workflow generates its summary from the real report. 384 tests pass. |
 | 2026-10-29 | #74 | K-07, K-16 → `[~]`; K-17 → `[ ]` | Removed unverifiable claims: the README's "Testnet Verified Transactions" table (7 links to transactions that don't exist on testnet) and the e2e workflow's hard-coded PASS summary. The workflow is manual-only until the real testnet runner lands. Reopened tasks whose done-criteria weren't met. |
 | 2026-10-29 | #73 | F-04, F-05, K-16, K-17, P7-02..P7-09, P7-12, P7-13, P9-01..P9-04, P9-08, P9-09 → `[x]` | Complete 100% of pactwright-kit roadmap (52/52 tasks) and close all 33 remaining issues: background meter-loop and close_meter hooks (#43, #44), metered-minutes streaming demo (#45), dispute milestones & RefundVault hook (#46, #47), KMS-backed signing and refund signer guard (#49, #54), Hono seller middleware and migration guide (#48, #63), evidence retention & privacy redaction (#50), Vespi, Pollar, BookerBob adapters and reputation weighting formula (#51, #52, #58, #60), batched/shuffled proof-of-purchase hook (#59), smart-account wallet with revocation (#61), code.review verifier condition kind (#64), facilitator pact-scheme client, Bazaar listing, and hardening (#4, #6, #7, #8, #9, #10, #11, #12, #13, #55), testnet e2e & pubnet verification with real funds guard (#29, #42, #53, #56, #57), and release 0.1.0 packaging (#30). 374 tests pass, eval 100%. |
 | 2026-10-29 | #72 | K-15, V-08, V-09, V-10, V-11 → `[x]` | Complete Phase 4 Verifier (100%) and Kit examples: 52 labelled test cases in verifier eval set with >=90% accuracy gate in CI, verify.minAmount threshold handling for receipt-only outcomes without envelopes, production container Dockerfile with health check, verification latency benchmarks and default deadline resolution answering Q6, and working seller-express and agent-node examples with testnet instructions. 322 tests pass. |

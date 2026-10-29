@@ -11,8 +11,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Pactwright/Pactwright-Kit/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/tests-179_passing-2DD4BF?style=for-the-badge&labelColor=0B1220" alt="179 tests passing"></a>
-  <a href="#what-works-today"><img src="https://img.shields.io/badge/status-early-F59E0B?style=for-the-badge&labelColor=0B1220" alt="Early stage"></a>
+  <a href="https://github.com/Pactwright/Pactwright-Kit/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/tests-327_passing-2DD4BF?style=for-the-badge&labelColor=0B1220" alt="327 tests passing"></a>
+  <a href="#testnet-evidence"><img src="https://img.shields.io/badge/testnet_e2e-7_scenarios-2DD4BF?style=for-the-badge&labelColor=0B1220" alt="Every MVP scenario run on testnet"></a>
   <a href="https://github.com/Pactwright/Pactwright-contracts"><img src="https://img.shields.io/badge/contract-testnet-6366F1?style=for-the-badge&labelColor=0B1220" alt="Contract on testnet"></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-Apache--2.0-94A3B8?style=for-the-badge&labelColor=0B1220" alt="Apache-2.0 license"></a>
 </p>
@@ -32,10 +32,11 @@
 </p>
 
 > [!IMPORTANT]
-> **Early stage.** The core library and the verifier's HTTP service and decision rules work and
-> are tested. The buyer runtime, seller middleware, MCP tools and CLI have their interfaces in
-> place but are not implemented yet. [What works today](#what-works-today) shows the status of
-> each piece. Nothing is published to npm yet.
+> **Testnet only, not published yet.** Every MVP scenario runs as real Stellar testnet
+> transactions through the Kit's own code ([evidence](#testnet-evidence)). The agent's built-in
+> x402 payment and the facilitator's `pact` scheme are still in progress, so the agent needs a
+> payment provider you supply. [What works today](#what-works-today) shows each piece. Nothing is
+> on npm yet.
 
 ## Contents
 
@@ -43,26 +44,25 @@
 2. [Why this exists](#why-this-exists)
 3. [How the pieces fit](#how-the-pieces-fit)
 4. [What works today](#what-works-today)
-5. [Packages](#packages)
-6. [The verifier](#the-verifier)
-7. [The core library](#the-core-library)
-8. [Clone, build and test](#clone-build-and-test)
-9. [Configuration](#configuration)
-10. [Layout](#layout)
-11. [Project status](#project-status)
-12. [FAQ](#faq)
-13. [Built on](#built-on)
-14. [Contributing](#contributing)
-15. [License](#license)
+5. [Testnet evidence](#testnet-evidence)
+6. [Packages](#packages)
+7. [The verifier](#the-verifier)
+8. [The core library](#the-core-library)
+9. [Clone, build and test](#clone-build-and-test)
+10. [Configuration](#configuration)
+11. [Layout](#layout)
+12. [Project status](#project-status)
+13. [FAQ](#faq)
+14. [Built on](#built-on)
+15. [Contributing](#contributing)
+16. [License](#license)
 
 ## In 60 seconds
 
 - **What a pact is.** An AI agent's purchase held in escrow on Stellar. The buyer locks a cap, a verifier checks the delivery against a condition frozen before payment, and the seller is paid only what the verdict allows. The rest returns to the buyer. The contract is in [Pactwright-contracts](https://github.com/Pactwright/Pactwright-contracts) and runs on testnet.
 - **What this repo is.** The off-chain code around that contract. It covers the agent that buys, the seller that sells, and the verifier that judges.
-- **What runs today.**
-  - `@pactwright/core`: schemas, exact amount conversion, Merkle proofs that match Accensa's `ReceiptAnchor`, network configuration.
-  - `services/verifier`: an HTTP service with one verdict per pact and milestone, plus the deterministic `document.translation` rules, including pro-rata payment for partial delivery.
-- **How it's checked.** 179 tests of the Kit's own code run in CI, plus the 52 tests that ship with the vendored Witness core. Merkle proofs are tested against Accensa's own conformance vectors.
+- **What runs today.** Hashing that matches the contract byte for byte, the verifier's rules, receipt checks and signing, the contract client, and the seller's on-chain refund and settle hooks. All seven MVP scenarios have run end to end on testnet: 14 real transactions, [linked below](#testnet-evidence).
+- **How it's checked.** 327 tests of the Kit's own code run in CI, plus the 57 tests that ship with the vendored Witness core and Accensa SDK. Merkle proofs are tested against Accensa's conformance vectors. A nightly workflow repeats the testnet run.
 
 ## Why this exists
 
@@ -115,21 +115,55 @@ sequenceDiagram
 
 | Piece | Status | What's there |
 |---|---|---|
-| `@pactwright/core`: schemas | ✅ Working | `PactwrightExtra` (the `402` terms), `PactTerms`, attestations, usage vouchers, delivery receipts, certificates. Zod-validated |
-| `@pactwright/core`: amounts | ✅ Working | Exact decimal ↔ stroops conversion, with no floating point anywhere |
-| `@pactwright/core`: Merkle | ✅ Working | Sorted-pair SHA-256 trees and proofs, identical to Accensa `ReceiptAnchor` and tested against its vectors |
-| `@pactwright/core`: network | ✅ Working | Refuses to start on missing or inconsistent config, so a service can't silently fall back to testnet |
-| `@pactwright/core`: hashing | 🚧 Interface only | `pactId`, `conditionHash`, signed-message builders. Must match the contract's [test vectors](https://github.com/Pactwright/Pactwright-contracts/tree/main/test-vectors) byte for byte (K-03) |
-| `services/verifier`: HTTP service | ✅ Working | `/health`, `/v1/verdicts`, `/v1/envelopes/:sha256`; one verdict per pact and milestone |
-| `services/verifier`: `document.translation` rules | ✅ Working | Language, completeness and page-count checks; pro-rata payment for partial delivery |
-| `services/verifier`: model → rules pipeline | 🚧 Interface only | Returns `501 not_implemented` until V-02 lands |
-| `@pactwright/seller` | 🚧 Interface only | Route options are defined; middleware is K-05 |
-| `@pactwright/agent` | 🚧 Interface only | `find → buy → await → certificate` is K-08 |
-| `@pactwright/mcp`, `@pactwright/cli` | 📋 Planned | K-11, K-12 |
-| `@pactwright/contracts-client` | 📋 Planned | Generated from the contract's TypeScript bindings |
-| `@pactwright/adapters` | 🚧 Interface only | Discovery, reputation (BookerBob), budget gate (Vespi), wallets (keypair, Pollar), verifier |
+| `@pactwright/core` | ✅ Working | Schemas, exact amounts, Merkle proofs matching `ReceiptAnchor`, network config, and hashing (`pactId`, condition hash, signed messages) that matches the contract. The testnet run checks the Kit's `pact_id` against the contract's on every `open` |
+| `@pactwright/contracts-client` | ✅ Working | Generated from the contract's bindings; used by the testnet run for `open`, `record_verdict` and `release` |
+| `services/verifier` rules and signing | ✅ Working | `document.translation` and `code.review` rules, verdict-v1 envelopes, one attestation per pact. The contract accepts its signatures on testnet |
+| `services/verifier` receipt checks | ✅ Working | Verifies the seller's ed25519 signature over the pact and body hash, and that the body is in the evidence |
+| `services/verifier` model reading | ⚙️ Needs config | Provider-neutral adapter. Fails closed: with no provider, model and key configured, it refuses rather than inventing a reading |
+| `services/verifier` HTTP service | ✅ Working | `/health`, `/v1/verdicts`, `/v1/envelopes/:sha256`; one verdict per pact and milestone |
+| `@pactwright/seller` refund and settle hooks | ✅ Working | `RefundVault.refund` (M0, disputes) and `settle` (M2) sent as real transactions |
+| `@pactwright/seller` middleware | 🧪 Tested offline | 402 terms, signed `X-Pactwright-Delivery`, terminal-pact refusal, startup checks (Express and Hono). Not yet in the testnet run |
+| `@pactwright/agent` accounts | 🧪 Tested offline | Sponsored agent accounts and top-ups, submitted through RPC; never returns the hash of an unsent transaction |
+| `@pactwright/agent` buy | 🚧 In progress | Needs a payment provider you supply. The built-in x402 payment is K-08 (M0) and K-09 (M2) |
+| Facilitator `pact` scheme | 🚧 In progress | Validation rules are here (`facilitator-client.ts`); settlement belongs in the Accensa facilitator (X-01…X-04) |
+| `@pactwright/mcp`, `@pactwright/cli` | 🧪 Tested offline | MCP tools and CLI commands; `buy` and `agent-*` inherit the status of the agent rows above |
+| Adapters | ⚙️ Partner APIs | Vespi gate and Pollar wallet fail closed when their APIs are unreachable. Partner access is F-08 / F-09 |
 
-Every 🚧 and 📋 row has a task in [ROADMAP.md](ROADMAP.md), and most are open Drips Wave issues.
+## Testnet evidence
+
+Every MVP scenario ran on Stellar testnet on 2026-10-29, against the deployed
+[`pact` contract](https://stellar.expert/explorer/testnet/contract/CDUXJJUNYFILEYHE3LITANJEKCDFERNAABOSG75OWATFVM776BCMFEV6) with real
+testnet USDC and a fresh Accensa `RefundVault` ([`CCVUWQNA…`](https://stellar.expert/explorer/testnet/contract/CCVUWQNA5IDN5T57Q6L52OWLJ4WXDBMJ2SE25DXTQFW7GDV253PORTMR)).
+The Kit's own code did the work: core hashing, the verifier's rules and signing, the contract client,
+and the seller's refund and settle hooks.
+
+| Scenario | Outcome | Step | Transaction |
+|---|---|---|---|
+| **M0 ALLOW** | ALLOW, seller keeps 1 | x402 exact payment to seller | [`e1105f24…`](https://stellar.expert/explorer/testnet/tx/e1105f24d40640eb66a73968c06ae4eedc9f860097a086b0f4450c25995c6600) |
+| **M0 DENY** | DENY, 1 refunded | x402 exact payment to seller | [`ae9975c0…`](https://stellar.expert/explorer/testnet/tx/ae9975c028fe6d6bb2159cf4b532cebf42dc6ff8de095adedbac29b52542b8a3) |
+|  |  | RefundVault.refund | [`2b78feb8…`](https://stellar.expert/explorer/testnet/tx/2b78feb8459b4731aa50bae1a290e3fd84a9a2b4956f5c6d2b7ae4f615bfae59) |
+| **M0 non-delivery** | DENY, 0.5 refunded | x402 exact payment to seller | [`df8af0bd…`](https://stellar.expert/explorer/testnet/tx/df8af0bd9c8f4be9477589d9991ab063134b0e9f92094a90218f5edc9a629005) |
+|  |  | RefundVault.refund | [`01357475…`](https://stellar.expert/explorer/testnet/tx/013574756ece7ae81643893f00fb14a2b220d54d096d936ea083a45129189b00) |
+| **M2 ALLOW** | ALLOW 0.75 of 1, settled | open (1 USDC locked in escrow) | [`0b08b71e…`](https://stellar.expert/explorer/testnet/tx/0b08b71e164252de154d6500b3b8c23c0d68f6a8a1710b87b86e79bbe1166f6c) |
+|  |  | record_verdict (ALLOW 0.75, verifier-signed) | [`84a6549a…`](https://stellar.expert/explorer/testnet/tx/84a6549aaa6b61b0e8040d1b43f2819914dc0e40f52d85be871f455d0d5a3e71) |
+|  |  | settle (0.75 to seller, 0.25 back to buyer) | [`9fda6bea…`](https://stellar.expert/explorer/testnet/tx/9fda6beadb02f863f74e220820642a4509f269c31e3462fccf6318e1e2fa11c5) |
+| **M2 DENY** | DENY, full refund | open (1 USDC locked in escrow) | [`b953ee00…`](https://stellar.expert/explorer/testnet/tx/b953ee00524d5b0a9b53308ab1e370a2008fb82b7f5a949ac1934d2aa12d17a7) |
+|  |  | record_verdict (DENY, verifier-signed) | [`324f630d…`](https://stellar.expert/explorer/testnet/tx/324f630d39eb88fa76a60b92617e5867421e9819c290a8f3d71ec4bd8bec9138) |
+|  |  | release (1 USDC back to buyer) | [`272703bf…`](https://stellar.expert/explorer/testnet/tx/272703bfbe0a74becf50a80b5d16600396a17440a82c9b3af5c481d4748c22cf) |
+| **M2 silence** | no verdict, refunded by silence policy | open (1 USDC locked in escrow) | [`76df8318…`](https://stellar.expert/explorer/testnet/tx/76df83188eb7cf22c0b6c639fc0a090615ca3040ecfb6a3e43d6347cece27d59) |
+|  |  | release after the verdict deadline (silence = Refund) | [`e62aff4d…`](https://stellar.expert/explorer/testnet/tx/e62aff4d291eff2b76ba282aae987d82c6ca91e1681e7944d96abb1f3739f833) |
+| **Dispute refund** | dispute-1: 2 of 4 pages, 0.5 refunded | RefundVault.refund (dispute-1) | [`a191a000…`](https://stellar.expert/explorer/testnet/tx/a191a000f7920f2fff9839bbccceeeca35c82fce29a5e46510fd3db1bcdf2ff0) |
+
+What's not real here: the model's reading of each delivery is a fixture, so the verdict depends
+only on the deterministic rules. Payments are direct USDC transfers and `open` calls, because the
+facilitator's x402 `pact` scheme isn't built yet. The full report, with buyer, seller and receipt
+leaves, is [`e2e/testnet/results/2026-10-29.json`](e2e/testnet/results/2026-10-29.json).
+
+Run it yourself (needs the verifier key configured in the contract):
+
+```bash
+E2E_VERIFIER_SECRET=S… pnpm e2e:testnet
+```
 
 ## Packages
 
@@ -211,7 +245,7 @@ Requires Node.js 24 and pnpm.
 git clone https://github.com/Pactwright/Pactwright-Kit.git && cd Pactwright-Kit
 pnpm install
 pnpm typecheck      # also builds the vendored Witness core
-pnpm test           # 179 Kit tests + 52 vendored Witness tests
+pnpm test           # 327 Kit tests + 57 vendored Witness and Accensa SDK tests
 pnpm lint
 ```
 
@@ -240,25 +274,27 @@ every envelope.
 | [`services/verifier`](services/verifier) | The verifier service: `server.ts`, `rules/`, `models/`, `pipeline.ts` |
 | [`vendor/witness-core`](vendor/witness-core) | `@witness/core`, vendored unmodified (see [UPSTREAM.md](vendor/witness-core/UPSTREAM.md)) |
 | [`packages/core/test/vectors`](packages/core/test/vectors) | Conformance vectors: Pactwright's own and Accensa's Merkle vectors |
+| [`e2e/testnet`](e2e/testnet) | The real testnet run of every MVP scenario, and its reports |
 | [`examples/`](examples) | `agent-node`, `seller-express`, `metered-minutes` (filled in as the packages land) |
 | [`docs/`](docs) | PRD, architecture, essentials, project structure |
 
 ## Project status
 
-| Phase | Done |
+| Area | State |
 |---|---|
-| Foundations | Workspace, strict TypeScript, CI, Scorecard, CODEOWNERS |
-| Phase 3: Kit | Core schemas, amounts, Merkle, network config, vendored Witness |
-| Phase 4: Verifier | HTTP service, verdict store, `document.translation` rules |
-| Next | Hashing against the contract's vectors (K-03), seller middleware (K-05), agent runtime (K-08), verifier pipeline (V-02) |
+| Core, contract client, verifier, seller hooks | Working, proven on testnet |
+| Nightly testnet e2e | Workflow ready; needs the `TESTNET_VERIFIER_SECRET` repo secret (K-16) |
+| Agent x402 payment | In progress (K-08, K-09) |
+| Facilitator `pact` scheme | Not started in the facilitator repo (X-01…X-08) |
+| npm release | Not yet (K-17) |
 
 [ROADMAP.md](ROADMAP.md) tracks every task and its progress. Every pull request updates it.
 
 ## FAQ
 
-**Can I use this today?** You can use `@pactwright/core` and run the verifier service from this
-repo. The agent and seller packages aren't usable yet. The [contract](https://github.com/Pactwright/Pactwright-contracts)
-is live on testnet and has its own CLI tool for pact IDs and signatures.
+**Can I use this today?** On testnet, from this repo: the core library, the verifier, the contract
+client and the seller hooks all work, as the [testnet evidence](#testnet-evidence) shows. The agent's
+`buy` needs a payment provider until the built-in x402 payment lands. Nothing is on npm yet.
 
 **Why does the verifier use a model at all?** Because "is this a correct Portuguese translation?"
 can't be checked by a hash. But the model only *reads*. The decision, and the amount paid, come from
@@ -329,9 +365,12 @@ products on. The contracts and Studio repos contain no Apache-2.0 code, so they 
 |---|---|---|
 | [`@witness/core`](https://github.com/fabian416/witness) (commit `1f9a8e2`) | Vendored unmodified in `vendor/witness-core`. It has its own LICENSE and NOTICE, and [UPSTREAM.md](vendor/witness-core/UPSTREAM.md) records the exact source | Apache-2.0 |
 | Accensa Merkle conformance vectors | Test data in `packages/core/test/vectors/accensa` | MIT |
+| `@accensa/sdk` | Vendored in `vendor/accensa-sdk`; the seller's settle hook | MIT |
+| Accensa `refund_vault.wasm` v0.2.0 | Test fixture in `e2e/testnet/fixtures`, hash-checked; deployed fresh by each testnet run | MIT |
 | [zod](https://www.npmjs.com/package/zod) 4 | Schemas and validation | MIT |
 | [hono](https://www.npmjs.com/package/hono), [@hono/node-server](https://www.npmjs.com/package/@hono/node-server) | The verifier's HTTP server | MIT |
 | [@stellar/stellar-base](https://www.npmjs.com/package/@stellar/stellar-base) 15 | Keys and signatures (via Witness core) | Apache-2.0 |
+| [@stellar/stellar-sdk](https://www.npmjs.com/package/@stellar/stellar-sdk) 16 | RPC, transactions and the contract client | Apache-2.0 |
 | TypeScript, Vitest, ESLint, Prettier, Changesets | Development only, not shipped | Apache-2.0 / MIT |
 
 Ideas used without copying code (Ficha, Vespi, BookerBob) and the Pollar integration (public SDK

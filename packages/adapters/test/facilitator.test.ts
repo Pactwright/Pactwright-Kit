@@ -76,8 +76,8 @@ describe("FacilitatorSchemeHandler (X-02, X-03, X-04, X-05, X-08)", () => {
 
   it("submits /settle with fee sponsorship and rejects duplicate pact_id", async () => {
     const res = await handler.submitSettle(baseRequest);
-    expect(res.settled).toBe(true);
-    expect(res.sponsoredFeeStroops).toBe(100);
+    expect(res.accepted).toBe(true);
+    expect(res).not.toHaveProperty("txHash");
 
     // Duplicate pact_id
     await expect(handler.submitSettle(baseRequest)).rejects.toThrow(/already been used/);

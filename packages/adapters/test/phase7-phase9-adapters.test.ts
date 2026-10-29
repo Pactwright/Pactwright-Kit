@@ -19,7 +19,18 @@ describe("GateVespi (P7-12, FR-A4)", () => {
     });
 
     expect(res.approved).toBe(true);
-    expect(res.fundingTx).toBeDefined();
+    expect(res.fundingTx).toBeUndefined(); // auto-approval moves no money
+  });
+
+  it("denies the budget when Vespi can't be reached (fails closed)", async () => {
+    const gate = new GateVespi({
+      vespiApiUrl: "https://vespi.invalid",
+      fetchImpl: async () => {
+        throw new Error("network down");
+      },
+    });
+    const res = await gate.approveBudget({ agent: Keypair.random().publicKey(), amount: "5.00", asset: "USDC" });
+    expect(res.approved).toBe(false);
   });
 
   it("calls Vespi API endpoint and parses response", async () => {
@@ -53,6 +64,7 @@ describe("WalletPollar (P7-13, FR-A4, Q1)", () => {
       principalAddress: principalKey.publicKey(),
       agentAddress: agentKey.publicKey(),
       sessionId: "session_abc",
+      fetchImpl: async () => new Response(JSON.stringify({ signed_entry: "SIGNED" }), { status: 200 }),
     });
 
     expect(wallet.address()).toBe(agentKey.publicKey());
@@ -60,7 +72,16 @@ describe("WalletPollar (P7-13, FR-A4, Q1)", () => {
 
     const entry = "AAAA...testAuthEntry";
     const signed = await wallet.signAuthEntry(entry);
-    expect(signed).toBeDefined();
+    expect(signed).toBe("SIGNED");
+  });
+
+  it("throws instead of returning an unsigned entry when Pollar fails", async () => {
+    const wallet = new WalletPollar({
+      principalAddress: principalKey.publicKey(),
+      agentAddress: agentKey.publicKey(),
+      fetchImpl: async () => new Response("down", { status: 503 }),
+    });
+    await expect(wallet.signAuthEntry("AAAA")).rejects.toThrow(/could not sign/);
   });
 });
 

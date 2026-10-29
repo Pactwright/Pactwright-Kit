@@ -1,5 +1,7 @@
 /** Route attribution via @accensa/sdk createSettleHook(); M2 auto-settle on ALLOW. ROADMAP K-07. */
 import { createSettleHook } from "@accensa/sdk";
+import { toStroops } from "@pactwright/core";
+import { invokeContract, scv, type ChainOptions } from "../chain.ts";
 
 export { createSettleHook };
 
@@ -13,7 +15,8 @@ export interface VerdictNotification {
 export interface AutoSettleOptions {
   facilitatorUrl?: string;
   pactContractId?: string;
-  sellerSecret?: string;
+  /** Settle directly on-chain, signed by the seller, instead of through the facilitator. */
+  chain?: ChainOptions;
   fetchImpl?: typeof fetch;
 }
 
@@ -38,7 +41,19 @@ export async function handleAutoSettle(
     return { settled: false, pactId };
   }
 
-  const facilitatorUrl = options?.facilitatorUrl ?? process.env.FACILITATOR_URL ?? "https://facilitator.pactwright.dev";
+  const pactContractId = options?.pactContractId ?? process.env.PACT_CONTRACT_ID;
+  if (options?.chain) {
+    if (!pactContractId) throw new Error("auto-settle on-chain needs pactContractId");
+    const sent = await invokeContract(options.chain, pactContractId, "settle", [
+      scv.bytes32(pactId),
+      scv.i128(toStroops(allowedAmount ?? "0")),
+    ]);
+    return { settled: true, txHash: sent.txHash, pactId, amount: allowedAmount };
+  }
+
+  // Through the facilitator's /pact/submit (fee-sponsored), once the `pact` scheme exists (ROADMAP X-04).
+  const facilitatorUrl = options?.facilitatorUrl ?? process.env.FACILITATOR_URL;
+  if (!facilitatorUrl) throw new Error("auto-settle needs either chain options or FACILITATOR_URL");
   const doFetch = options?.fetchImpl ?? globalThis.fetch;
 
   if (typeof doFetch !== "function") {
@@ -69,9 +84,10 @@ export async function handleAutoSettle(
     }
 
     const data = (await res.json()) as SubmitResponse;
+    if (!data.txHash) throw new Error("facilitator did not return a transaction hash");
     return {
       settled: true,
-      txHash: data.txHash ?? "simulated_settle_tx_hash",
+      txHash: data.txHash,
       pactId,
       amount: allowedAmount,
     };

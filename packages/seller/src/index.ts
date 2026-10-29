@@ -21,7 +21,9 @@ export {
   type M0VerdictNotification,
   type RefundOptions,
   type RefundResult,
+  type RefundCall,
 } from "./hooks/refund.ts";
+export { invokeContract, scv, ChainSubmitError, type ChainOptions, type EnvelopeSigner, type SubmittedCall } from "./chain.ts";
 export {
   handleDisputeRefund,
   type DisputeNotification,
