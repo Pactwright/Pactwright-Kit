@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **47 / 54 tasks (87%)** |
+| Progress | **48 / 54 tasks (89%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -16,7 +16,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Section | Tasks | Done | % |
 |---|---|---|---|
 | Foundations (this repo) | 7 | 7 | 100% |
-| Phase 3 — Kit | 18 | 16 | 89% |
+| Phase 3 — Kit | 18 | 17 | 94% |
 | Phase 4 — Verifier | 12 | 10 | 83% |
 | Phase 7 — v1 | 10 | 7 | 70% |
 | Phase 9 — v2 | 7 | 7 | 100% |
@@ -53,7 +53,7 @@ SDK, MCP and CLI for M0 and M2.
 - [x] **K-14** Vendor `@witness/core` under `vendor/witness-core/` with NOTICE — wave · T · K-01 (#65, 2026-10-28)
 - [x] **K-15** Examples: `seller-express`, `agent-node` — wave · M · K-09 (#72, 2026-10-29)
 - [x] **K-16** `e2e-testnet.yml` nightly covering every MVP scenario in ARCH §13 — wave · H · K-09, V-10, S-04 (#76, 2026-10-29)
-- [ ] **K-18** Drop `shardId` from `CertificateSchema` and the ARCHITECTURE copy (#82) — wave · T · S-04
+- [x] **K-18** Drop `shardId` from `CertificateSchema` and the ARCHITECTURE copy (#86, 2026-10-29) — wave · T · S-04
 - [ ] **K-17** Publish `@pactwright/*` 0.1.0 to npm — core · T · K-16 — reopened: `@pactwright/*` is not on npm (E404); needs the npm scope (F-01) and a token
 
 ## Phase 4 — Verifier
@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #86 | K-18 → `[x]` | Drop leftover `shardId` from `CertificateSchema` and ARCHITECTURE copy, add `leafInput` matching Studio's `/api/certificates/:id`. (closes #82) |
 | 2026-10-29 | real-model eval (#80) | V-12 → `[~]` | `eval/real/`: 29 labelled `document.translation` cases built from real documents (English source, translations in 8 languages, unrelated texts), run through the full pipeline with the configured model. Reports per-kind accuracy, provider, model and raw-output hashes; manual and weekly `real-model` job gates on ≥ 90%. Rule sets can now give the model reading instructions (which item is the source, how pages are marked). Not run yet: needs the model API key. |
 | 2026-10-29 | verifier deploy (#79, #78) | V-10 stays `[~]` | Verifier made deployable: `main.ts` entrypoint that refuses to start without the model, its API key or the verifier key; the server now runs the configured model and loads evidence from `EVIDENCE_BUCKET_URL` only (it used to read a placeholder instead of the evidence); the model now receives the evidence, the output schema and the effort; `PORT` fallback; removed TypeScript parameter properties that plain Node can't run; Dockerfile builds and runs `main.ts`. `render.yaml` hosts the facilitator (L-08) and verifier on Render testnet; secrets stay in Render. |
 | 2026-10-29 | #84 | V-10 → `[~]`; V-12, K-18 added | Readiness review: no testnet verifier is deployed (V-10, #79); the eval scores rules on hand-written readings, so real-model accuracy is new (V-12, #80); `shardId` cleanup (K-18, #82). Also opened #78 (hosted facilitator), #81 (npm scope), #83 (KMS). |

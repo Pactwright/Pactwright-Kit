@@ -111,6 +111,14 @@ export const DeliveryReceiptSchema = z.object({
 });
 
 // ---------- certificate ----------
+export const LeafInputSchema = z.object({
+  transition: z.string(),
+  toSellerStroops: z.string(),
+  toBuyerStroops: z.string(),
+  envelopeHash: Hex64.nullable(),
+  ledger: z.number().int().nullable(),
+});
+
 export const CertificateSchema = z.object({
   pactId: Hex64,
   transition: TransitionSchema,
@@ -118,9 +126,9 @@ export const CertificateSchema = z.object({
   toBuyer: DecimalAmount,
   envelopeHash: Hex64.optional(),
   leaf: Hex64,
+  leafInput: LeafInputSchema.optional(),
   status: z.enum(["pending", "anchored"]),
   proof: z.array(Hex64).optional(),
-  shardId: z.number().int().optional(),
   batchId: z.number().int().optional(),
   root: Hex64.optional(),
   receiptAnchor: StellarAddress,
@@ -137,4 +145,5 @@ export type PactTerms = z.infer<typeof PactTermsSchema>;
 export type VerdictAttestation = z.infer<typeof VerdictAttestationSchema>;
 export type UsageVoucher = z.infer<typeof UsageVoucherSchema>;
 export type DeliveryReceipt = z.infer<typeof DeliveryReceiptSchema>;
+export type LeafInput = z.infer<typeof LeafInputSchema>;
 export type Certificate = z.infer<typeof CertificateSchema>;

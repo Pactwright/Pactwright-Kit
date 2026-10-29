@@ -71,9 +71,15 @@ const certificate = {
   toBuyer: "0.25",
   envelopeHash: hex,
   leaf: hex,
+  leafInput: {
+    transition: "settled",
+    toSellerStroops: "7500000",
+    toBuyerStroops: "2500000",
+    envelopeHash: hex,
+    ledger: 100,
+  },
   status: "anchored",
   proof: [hex, hex],
-  shardId: 0,
   batchId: 1,
   root: hex,
   receiptAnchor: C,
@@ -105,7 +111,7 @@ const cases: Case[] = [
   ["DeliveryReceiptSchema", DeliveryReceiptSchema, [{ pactId: hex, bodySha256: hex, signature: "c2ln" }],
     [{ pactId: hex, bodySha256: hex, signature: "" }, { pactId: hex, bodySha256: "x", signature: "c2ln" }]],
   ["CertificateSchema", CertificateSchema,
-    [certificate, { ...certificate, status: "pending", proof: undefined, shardId: undefined, batchId: undefined, root: undefined, envelopeHash: undefined }],
+    [certificate, { ...certificate, status: "pending", proof: undefined, batchId: undefined, root: undefined, envelopeHash: undefined, leafInput: undefined }],
     [{ ...certificate, status: "done" }, { ...certificate, transition: "funded" }, { ...certificate, proof: ["x"] }]],
 ];
 
