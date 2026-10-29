@@ -1,0 +1,22 @@
+{
+  "id": "deny_invalid_condition_minpages_zero",
+  "description": "Invalid condition: minPages must be at least 1",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "es",
+    "minPages": 0,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "es",
+    "pageCount": 1,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": ""
+  },
+  "expected": {
+    "verdict": "DENY",
+    "reason": "CONDITION_MISMATCH"
+  }
+}

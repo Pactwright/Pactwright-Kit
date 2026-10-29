@@ -1,0 +1,22 @@
+{
+  "id": "deny_lang_mismatch_pl_for_ru",
+  "description": "Language mismatch: delivered pl when ru required",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "ru",
+    "minPages": 1,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "pl",
+    "pageCount": 1,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Wrong language"
+  },
+  "expected": {
+    "verdict": "DENY",
+    "reason": "CONDITION_MISMATCH"
+  }
+}

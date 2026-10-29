@@ -1,0 +1,22 @@
+{
+  "id": "deny_lang_mismatch_it_for_pt",
+  "description": "Language mismatch: delivered it when pt required",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "pt",
+    "minPages": 1,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "it",
+    "pageCount": 1,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Wrong language"
+  },
+  "expected": {
+    "verdict": "DENY",
+    "reason": "CONDITION_MISMATCH"
+  }
+}

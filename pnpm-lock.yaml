@@ -35,6 +35,12 @@ importers:
 
   examples/agent-node:
     dependencies:
+      '@pactwright/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@pactwright/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@pactwright/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -50,6 +56,16 @@ importers:
       '@pactwright/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@pactwright/seller':
+        specifier: workspace:*
+        version: link:../../packages/seller
+      express:
+        specifier: ^5.0.0
+        version: 5.3.0
+    devDependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
 
   packages/adapters:
     dependencies:

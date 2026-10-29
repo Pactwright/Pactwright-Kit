@@ -79,6 +79,7 @@ export const PactTermsSchema = z.object({
   condition: z.record(z.string(), z.unknown()),
   verifier: Hex64,
   metered: z.boolean(),
+  verify: z.object({ minAmount: DecimalAmount }).optional(),
   silence: SilenceSchema.optional(),
   verdictDeadline: LedgerSeq.optional(),
   settleDeadline: LedgerSeq.optional(),

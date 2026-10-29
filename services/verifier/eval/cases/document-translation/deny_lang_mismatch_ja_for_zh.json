@@ -1,0 +1,22 @@
+{
+  "id": "deny_lang_mismatch_ja_for_zh",
+  "description": "Language mismatch: delivered ja when zh required",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "zh",
+    "minPages": 1,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "ja",
+    "pageCount": 1,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Wrong language"
+  },
+  "expected": {
+    "verdict": "DENY",
+    "reason": "CONDITION_MISMATCH"
+  }
+}

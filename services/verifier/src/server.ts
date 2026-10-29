@@ -15,6 +15,7 @@ export const VerdictRequestSchema = z.object({
   terms: PactTermsSchema,
   evidence: z.array(EvidenceItemSchema).min(1),
   deliveryReceipt: z.string().min(1).optional(),
+  minAmount: z.string().optional(),
   milestone: z.union([z.literal("delivery"), z.string().regex(/^dispute-\d+$/)]).default("delivery"),
 });
 
@@ -60,6 +61,7 @@ export function createApp(deps: AppDeps): Hono {
         evidence: request.evidence,
         milestone: request.milestone as PipelineInput["milestone"],
         ...(request.deliveryReceipt ? { deliveryReceipt: request.deliveryReceipt } : {}),
+        ...(request.minAmount ? { minAmount: request.minAmount } : {}),
       });
     } catch (e) {
       if (e instanceof NotImplementedError) return c.json({ error: "not_implemented", roadmapTask: e.task }, 501);
@@ -67,6 +69,20 @@ export function createApp(deps: AppDeps): Hono {
     }
     if (result === "no-verdict") return c.json({ verdict: null, reason: "model_refusal" }, 202);
 
+    if (result.receiptOnly || !result.envelope) {
+      return c.json(
+        {
+          receiptOnly: true,
+          amount: result.amount.toString(),
+          envelope: null,
+          envelopeRef: null,
+          attestation: result.attestation ?? null,
+        },
+        200,
+      );
+    }
+
+    if (!result.envelopeRef) throw new Error("pipeline returned no envelope reference");
     const ref = parseAnchorReference(result.envelopeRef);
     if (!ref) throw new Error("pipeline returned a malformed envelope reference");
     try {

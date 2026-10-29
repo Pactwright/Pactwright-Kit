@@ -1,6 +1,6 @@
 /** Builds the 402 response with accepts[].extra.pactwright (ARCHITECTURE §8.1). ROADMAP K-06. */
 import { PactwrightExtraSchema, type PactwrightExtra } from "@pactwright/core";
-import { type PactRouteOptions, type SellerConfig, resolveSellerConfig } from "./pact.ts";
+import { type PactRouteOptions, type SellerConfig, resolveSellerConfig, resolveDeadlines } from "./pact.ts";
 
 export interface PaymentRequired {
   x402Version: 2;
@@ -48,9 +48,7 @@ export function buildPaymentRequired<Req>(
     if (options.silence) {
       extraCandidate.silence = options.silence;
     }
-    if (options.deadlines) {
-      extraCandidate.deadlines = options.deadlines;
-    }
+    extraCandidate.deadlines = options.deadlines ?? resolveDeadlines(undefined, condition.kind as string);
     if (options.meter) {
       extraCandidate.meter = options.meter;
     }

@@ -1,0 +1,22 @@
+{
+  "id": "deny_not_a_translation_3",
+  "description": "Delivery is not a translation of source (case 3)",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "de",
+    "minPages": 1,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "de",
+    "pageCount": 2,
+    "isTranslationOfSource": false,
+    "untranslatedSegments": 0,
+    "notes": "Delivered unrelated original document"
+  },
+  "expected": {
+    "verdict": "DENY",
+    "reason": "TASK_NOT_DONE"
+  }
+}
