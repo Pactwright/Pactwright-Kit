@@ -290,6 +290,17 @@ describe("Verifier Engine Pipeline", () => {
       ).rejects.toThrow(/can't be sent to the model/);
     });
 
+    it("treats an empty LLM_BASE_URL as the provider default", async () => {
+      const calls: string[] = [];
+      const fetchImpl = (async (url: string) => {
+        calls.push(String(url));
+        return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ detectedLanguage: "es", pageCount: 1, isTranslationOfSource: true, untranslatedSegments: 0, notes: "" }) } }] }));
+      }) as unknown as typeof fetch;
+      const adapter = new ProviderNeutralLLMAdapter({ apiKey: "k", modelId: "m", baseUrl: "", fetchImpl });
+      await adapter.read(testReadingSchema, "instructions", [{ mimeType: "text/plain", data: Buffer.from("Hola") }]);
+      expect(calls[0]).toBe("https://api.openai.com/v1/chat/completions");
+    });
+
     it("fails closed instead of inventing a reading when no model is configured", async () => {
       const adapter = new ProviderNeutralLLMAdapter({ apiKey: "", modelId: "" });
       await expect(

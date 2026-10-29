@@ -79,7 +79,8 @@ export class ProviderNeutralLLMAdapter implements ModelAdapter {
     // No default model: the model is pinned in configuration and recorded in every envelope.
     this.modelId = options?.modelId ?? process.env.VERIFIER_MODEL ?? "";
     this.effort = options?.effort ?? (process.env.VERIFIER_EFFORT?.trim() || undefined);
-    this.baseUrl = options?.baseUrl ?? process.env.LLM_BASE_URL;
+    // An empty value (as CI passes for an unset variable) means "the provider default", not "".
+    this.baseUrl = (options?.baseUrl ?? process.env.LLM_BASE_URL)?.trim() || undefined;
     this.apiKey = options?.apiKey ?? process.env.VERIFIER_LLM_API_KEY;
     this.fetchImpl = options?.fetchImpl ?? globalThis.fetch;
     this.mockReading = options?.mockReading;
