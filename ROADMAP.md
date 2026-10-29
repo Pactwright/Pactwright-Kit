@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **48 / 54 tasks (89%)** |
+| Progress | **49 / 54 tasks (91%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -18,7 +18,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Foundations (this repo) | 7 | 7 | 100% |
 | Phase 3 — Kit | 18 | 17 | 94% |
 | Phase 4 — Verifier | 12 | 10 | 83% |
-| Phase 7 — v1 | 10 | 7 | 70% |
+| Phase 7 — v1 | 10 | 8 | 80% |
 | Phase 9 — v2 | 7 | 7 | 100% |
 
 ## Foundations (this repo)
@@ -83,7 +83,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 - [x] **P7-05** Verifier dispute milestones (`dispute-<n>`) within the refund window — wave · H · V-05 · FR-S6 (#73, 2026-10-29)
 - [x] **P7-06** Dispute → `RefundVault` refund flow in the seller middleware; `Refunded` receipts — wave · M · P7-05 (#73, 2026-10-29)
 - [x] **P7-07** Hono middleware — wave · M · K-06 · FR-I3 (#73, 2026-10-29)
-- [~] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 — reopened: the Vault and HTTP signers are real, but the cited on-chain refund (a2410a5a…) was the e2e's M0 DENY refund signed with the seller's local key, not a KMS; a random-key fallback remained. Needs one refund signed through a real KMS
+- [x] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 (#91, 2026-10-29)
 - [x] **P7-09** Evidence privacy: retention, redaction hook, disclosure text — wave · M · V-02 · FR-V10 (#73, 2026-10-29)
 - [~] **P7-12** `gate-vespi` adapter: Vespi approves the budget — wave · H · K-13, F-08 · FR-A4 — reopened: approved up to 100 USDC when Vespi was unreachable and invented funding tx IDs; now fails closed. Untested against Vespi's real API (F-08)
 - [~] **P7-13** `wallet-pollar` adapter: principal funds the agent from Pollar; answer Q1 — wave · H · K-13, F-09 · FR-A4 — reopened: returned the unsigned entry when Pollar failed; now throws. Untested against Pollar's real API (F-09)
