@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-29T16:47:31.325Z",
+  "verifier": "https://pactwright-verifier-testnet.onrender.com",
+  "verifierHex": "4efdaeb6c34ef1babbc844909afe576b288a36a2afe43a8bf6fcff82c9ffe4ff",
+  "pactId": "4072556402d709463f7cb888a4a9e03b061d906f0b7ca5c49ebb2eec4e7d5c55",
+  "evidence": [
+    "https://raw.githubusercontent.com/Pactwright/pactwright-evidence/main/4072556402d709463f7cb888a4a9e03b061d906f0b7ca5c49ebb2eec4e7d5c55/7816267d1862ed84ca6d7690af6840ab11b57ca6b827b054a662421f43d219c2",
+    "https://raw.githubusercontent.com/Pactwright/pactwright-evidence/main/4072556402d709463f7cb888a4a9e03b061d906f0b7ca5c49ebb2eec4e7d5c55/1b8d53ea3e1b76ea430fa4255501918dc90b7e9c542aad8ee9c74e6662802812"
+  ],
+  "envelopeRef": "verdict-v1 sha256=6a01ac1b29a0c44ec9a0fb2b39e66f533a4b045eefbed90d34b69c61fd221e8a uri=https://verifier.pactwright.dev/v1/envelopes/6a01ac1b29a0c44ec9a0fb2b39e66f533a4b045eefbed90d34b69c61fd221e8a",
+  "verdict": "ALLOW",
+  "amount": "1",
+  "issuedLedger": 5453756,
+  "openTx": "b01031165b23c378d3fa9f5c9befbee0b1a733d944a89e1ce13e17ff290d1a5d",
+  "recordVerdictTx": "0225f78b5c3e9b321e1fd5311bc54a61ca9904fa82dbd2b4aeb9f379bc8650db",
+  "settleTx": "1f4ab38c3881892633c2dcf8d7c99c22bc49831d09512eb1b700e62e23e44924"
+}
