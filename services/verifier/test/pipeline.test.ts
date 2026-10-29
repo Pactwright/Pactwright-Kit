@@ -394,6 +394,20 @@ describe("Verifier Engine Pipeline", () => {
       ).rejects.toThrow("Only one attestation per pact allowed");
     });
 
+    it("points the envelope reference at the server that serves it, or at none", async () => {
+      const params = {
+        terms: mockTerms,
+        decision: { verdict: "ALLOW" as const, amount: toStroops("1.00"), criteria: [], reasons: ["OK" as const], policyVersion: "1" },
+        evidence: validEvidence,
+        verifierKey,
+        milestone: "delivery" as const,
+      };
+      const served = await signVerdict({ ...params, envelopeBaseUrl: "https://v.example/" });
+      expect(served.envelopeRef).toBe(`verdict-v1 sha256=${served.envelopeSha256} uri=https://v.example/v1/envelopes/${served.envelopeSha256}`);
+      const unserved = await signVerdict(params);
+      expect(unserved.envelopeRef).toBe(`verdict-v1 sha256=${unserved.envelopeSha256} uri=urn:pactwright:envelope:${unserved.envelopeSha256}`);
+    });
+
     it("stamps the attestation with the current ledger and refuses to sign without one", async () => {
       const escrowTerms: PactTerms = { ...mockTerms, mode: "escrow" };
       const params = {

@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { Keypair, type VerificationEnvelope } from "@witness/core";
 import { NotImplementedError } from "@pactwright/core";
 import { createApp, currentLedger } from "../src/server.ts";
-import { DuplicateVerdictError, MemoryVerdictStore } from "../src/store.ts";
+import { DuplicateVerdictError, MemoryVerdictStore, PostgresVerdictStore, type VerdictStore } from "../src/store.ts";
 import { loadVerifierConfig, type VerifierConfigError } from "../src/config.ts";
 import { runPipeline, type PipelineResult } from "../src/pipeline.ts";
 
@@ -36,6 +36,11 @@ describe("verifier HTTP API", () => {
     const res = await app.request("/health");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, verifier: G, verifierHex: key.rawPublicKey().toString("hex") });
+  });
+
+  it("GET /health says where envelopes are kept", async () => {
+    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), storeKind: "memory", pipeline: runPipeline });
+    expect(((await (await app.request("/health")).json()) as { store: string }).store).toBe("memory");
   });
 
   it("POST /v1/verdicts stores the envelope, then rejects a second delivery verdict with 409", async () => {
@@ -91,13 +96,57 @@ describe("verifier HTTP API", () => {
   });
 });
 
-describe("MemoryVerdictStore", () => {
-  it("enforces one envelope per (pact, milestone)", async () => {
-    const store = new MemoryVerdictStore();
-    await store.put(envelopeFor("delivery"), "1".repeat(64));
-    await expect(store.put(envelopeFor("delivery"), "2".repeat(64))).rejects.toBeInstanceOf(DuplicateVerdictError);
-    await store.put(envelopeFor("dispute-1"), "3".repeat(64));
-    expect(await store.find(hex, "dispute-1")).toBe("3".repeat(64));
+function storeContract(name: string, open: () => Promise<VerdictStore>, skip = false) {
+  describe.skipIf(skip)(name, () => {
+    it("enforces one envelope per (pact, milestone)", async () => {
+      const store = await open();
+      await store.put(envelopeFor("delivery"), "1".repeat(64));
+      const dup = await store.put(envelopeFor("delivery"), "2".repeat(64)).catch((e: unknown) => e);
+      expect(dup).toBeInstanceOf(DuplicateVerdictError);
+      expect((dup as DuplicateVerdictError).existing).toBe("1".repeat(64));
+      await store.put(envelopeFor("dispute-1"), "3".repeat(64));
+      expect(await store.find(hex, "dispute-1")).toBe("3".repeat(64));
+      expect(await store.find(hex, "dispute-2")).toBeUndefined();
+      expect((await store.get("1".repeat(64)))?.milestoneId).toBe("delivery");
+      expect(await store.get("f".repeat(64))).toBeUndefined();
+    });
+  });
+}
+
+storeContract("MemoryVerdictStore", async () => new MemoryVerdictStore());
+
+// Runs against a real database when TEST_DATABASE_URL is set (CI provides one).
+const testDb = process.env.TEST_DATABASE_URL;
+const pgStores: PostgresVerdictStore[] = [];
+async function freshPg(): Promise<PostgresVerdictStore> {
+  const store = await PostgresVerdictStore.connect(testDb!);
+  pgStores.push(store);
+  await (store as unknown as { pool: { query(q: string): Promise<unknown> } }).pool.query("TRUNCATE verifier_envelopes");
+  return store;
+}
+afterAll(async () => {
+  await Promise.all(pgStores.map((s) => s.close()));
+});
+storeContract("PostgresVerdictStore", freshPg, !testDb);
+
+describe.skipIf(!testDb)("PostgresVerdictStore durability", () => {
+  it("keeps envelopes across a reconnect, as after a restart", async () => {
+    const first = await freshPg();
+    await first.put(envelopeFor("delivery"), "4".repeat(64));
+    await first.close();
+    pgStores.splice(pgStores.indexOf(first), 1);
+    const second = await PostgresVerdictStore.connect(testDb!);
+    pgStores.push(second);
+    expect(await second.find(hex, "delivery")).toBe("4".repeat(64));
+    expect(await second.get("4".repeat(64))).toEqual(envelopeFor("delivery"));
+  });
+  it("lets exactly one of several concurrent verdicts for a pact through", async () => {
+    const store = await freshPg();
+    const results = await Promise.allSettled(
+      ["5", "6", "7", "8"].map((d) => store.put(envelopeFor("delivery"), d.repeat(64))),
+    );
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((r) => r.status === "rejected" && r.reason instanceof DuplicateVerdictError)).toHaveLength(3);
   });
 });
 
@@ -105,7 +154,7 @@ describe("loadVerifierConfig", () => {
   const env = {
     VERIFIER_PROVIDER: "example", VERIFIER_MODEL: "model-1", VERIFIER_SECRET_KEY: key.secret(),
     VERIFIER_LLM_API_KEY: "test-key", FACILITATOR_URL: "https://facilitator.example", EVIDENCE_BUCKET_URL: "s3://evidence",
-    STELLAR_RPC_URL: "https://rpc.example",
+    STELLAR_RPC_URL: "https://rpc.example", VERIFIER_PUBLIC_URL: "https://verifier.example/",
   };
   it("loads a complete config with defaults", () => {
     const config = loadVerifierConfig(env);
@@ -114,6 +163,19 @@ describe("loadVerifierConfig", () => {
     expect(config.nonDeliveryTimeoutSec).toBe(300);
     expect(config.llmApiKey).toBe("test-key");
     expect(config.rpcUrl).toBe("https://rpc.example");
+    expect(config.publicUrl).toBe("https://verifier.example");
+    expect(config.databaseUrl).toBeUndefined();
+  });
+  it("takes its public URL from Render unless VERIFIER_PUBLIC_URL is set", () => {
+    const { VERIFIER_PUBLIC_URL: _, ...rest } = env;
+    expect(loadVerifierConfig({ ...rest, RENDER_EXTERNAL_URL: "https://v.onrender.com" }).publicUrl).toBe("https://v.onrender.com");
+    expect(loadVerifierConfig({ ...env, RENDER_EXTERNAL_URL: "https://v.onrender.com" }).publicUrl).toBe("https://verifier.example");
+    expect(() => loadVerifierConfig(rest)).toThrow(/VERIFIER_PUBLIC_URL is not set/);
+  });
+  it("needs a database in production so envelopes survive restarts", () => {
+    expect(() => loadVerifierConfig({ ...env, NODE_ENV: "production" })).toThrow(/DATABASE_URL is not set/);
+    expect(loadVerifierConfig({ ...env, NODE_ENV: "production", DATABASE_URL: "postgres://db/v" }).databaseUrl).toBe("postgres://db/v");
+    expect(loadVerifierConfig({ ...env, DATABASE_URL: "postgres://db/a", VERIFIER_DATABASE_URL: "postgres://db/b" }).databaseUrl).toBe("postgres://db/b");
   });
   it("listens on the host's PORT unless VERIFIER_PORT is set", () => {
     expect(loadVerifierConfig({ ...env, PORT: "10000" }).port).toBe(10000);

@@ -32,6 +32,8 @@ export interface SignPipelineParams {
   verifierKey: Keypair;
   milestone: "delivery" | `dispute-${number}`;
   ledgerSeq?: number;
+  /** Public base URL that serves `/v1/envelopes/<sha256>`; without one the reference is a `urn:`. */
+  envelopeBaseUrl?: string;
 }
 
 export interface SignPipelineResult {
@@ -46,7 +48,7 @@ export interface SignPipelineResult {
 }
 
 export async function signVerdict(params: SignPipelineParams): Promise<SignPipelineResult> {
-  const { terms, decision, evidence, verifierKey, milestone, ledgerSeq } = params;
+  const { terms, decision, evidence, verifierKey, milestone, ledgerSeq, envelopeBaseUrl } = params;
 
   const condHash = terms.conditionHash || computeConditionHash(terms.condition);
 
@@ -69,7 +71,11 @@ export async function signVerdict(params: SignPipelineParams): Promise<SignPipel
   const envelope = signEnvelope(unsigned, verifierKey);
   const proofHash = computeProofHash(condHash, evidence);
   const envelopeSha256 = proofHash;
-  const envelopeRef = `verdict-v1 sha256=${envelopeSha256} uri=https://verifier.pactwright.dev/v1/envelopes/${envelopeSha256}`;
+  // Point only at a server that will serve the envelope; otherwise say it isn't served (urn:).
+  const envelopeUri = envelopeBaseUrl
+    ? `${envelopeBaseUrl.replace(/\/+$/, "")}/v1/envelopes/${envelopeSha256}`
+    : `urn:pactwright:envelope:${envelopeSha256}`;
+  const envelopeRef = `verdict-v1 sha256=${envelopeSha256} uri=${envelopeUri}`;
 
   let attestationResult: SignPipelineResult["attestation"];
 

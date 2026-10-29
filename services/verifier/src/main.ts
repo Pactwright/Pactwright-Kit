@@ -4,7 +4,7 @@ import { startServer } from "./server.ts";
 
 try {
   const config = loadVerifierConfig(process.env);
-  startServer(config);
+  await startServer(config);
   console.log(
     JSON.stringify({
       level: "info",
@@ -13,6 +13,8 @@ try {
       verifier: config.verifierKey.publicKey(),
       provider: config.provider,
       model: config.model,
+      publicUrl: config.publicUrl,
+      store: config.databaseUrl ? "postgres" : "memory",
     }),
   );
 } catch (e) {
