@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Keypair, StrKey, TransactionBuilder, Networks, Account } from "@stellar/stellar-base";
-import { resolveKmsSigner, RemoteKmsSigner, LocalKeypairSigner } from "../src/kms.ts";
+import { resolveKmsSigner, RemoteKmsSigner } from "../src/kms.ts";
 
 describe("KmsSigner (P7-08, FR-S7, B13)", () => {
   const originalEnv = { ...process.env };
