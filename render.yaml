@@ -1,6 +1,6 @@
 # Testnet hosting for the Pactwright x402 facilitator (ROADMAP L-08, Kit#78) and verifier
-# (ROADMAP V-10, Kit#79). Secrets are `sync: false`: Render asks for them when the Blueprint is
-# created and keeps them in its secret store. Never put a value for them in this file.
+# (ROADMAP V-10, Kit#79) on Render's Free tier (no credit card required).
+# Secrets are `sync: false`: Render asks for them when the Blueprint is created.
 # Spec: https://render.com/docs/blueprint-spec
 projects:
   - name: pactwright-testnet
@@ -13,7 +13,7 @@ projects:
             runtime: docker
             repo: https://github.com/accensa/x402-facilitator-stellar
             branch: main
-            plan: 0.5c-512mb
+            plan: free
             healthCheckPath: /healthz
             autoDeployTrigger: checksPass
             envVars:
@@ -37,7 +37,7 @@ projects:
             runtime: docker
             dockerfilePath: ./services/verifier/Dockerfile
             dockerContext: .
-            plan: 0.5c-512mb
+            plan: free
             healthCheckPath: /health
             autoDeployTrigger: checksPass
             envVars:
