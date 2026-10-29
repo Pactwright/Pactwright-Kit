@@ -15,8 +15,10 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@pactwright/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@pactwright/adapters": "workspace:*",
     "@pactwright/agent": "workspace:*",
+    "@pactwright/core": "workspace:*",
     "zod": "^4.1.0"
   },
   "files": [

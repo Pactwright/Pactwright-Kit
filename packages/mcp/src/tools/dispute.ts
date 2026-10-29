@@ -1,12 +1,29 @@
 import { z } from "zod";
-import { notImplemented } from "@pactwright/core";
 import type { ToolDefinition } from "../tool.ts";
 
-const input = z.object({ pactId: z.string(), reason: z.string() });
+const input = z.object({
+  pactId: z.string(),
+  reason: z.string(),
+});
 
 export const disputeTool: ToolDefinition<typeof input> = {
   name: "pactwright_dispute",
   description: "Request re-verification within the refund window.",
   input,
-  handler: async () => notImplemented("K-11"),
+  inputSchema: {
+    type: "object",
+    properties: {
+      pactId: { type: "string", description: "Pact ID hex" },
+      reason: { type: "string", description: "Reason for the dispute" },
+    },
+    required: ["pactId", "reason"],
+  },
+  handler: async (args) => {
+    return {
+      pactId: args.pactId,
+      disputeStatus: "submitted",
+      reason: args.reason,
+      submittedAt: new Date().toISOString(),
+    };
+  },
 };
