@@ -179,11 +179,24 @@ describe("KmsSigner (P7-08, FR-S7, B13)", () => {
     expect(() => resolveKmsSigner()).toThrow(/Refusing to sign with any local or random key/);
   });
 
-  it("verifies testnet refund transaction link signed by merchant key", () => {
-    // Real testnet refund on-chain transaction generated during e2e testing (results/2026-10-29.json)
-    const testnetRefundTx = "a2410a5a3536a92ae352250f963f9f5970932b26f3ef6093d4fbba34a431dadf";
-    const testnetExplorerUrl = `https://stellar.expert/explorer/testnet/tx/${testnetRefundTx}`;
-    expect(testnetExplorerUrl).toContain("stellar.expert/explorer/testnet/tx/");
-    expect(testnetRefundTx).toHaveLength(64);
+  it("refuses to sign with a random key when nothing is configured", () => {
+    const saved = { ...process.env };
+    for (const k of ["KMS_KEY_ID", "AWS_KMS_KEY_ARN", "VAULT_ADDR", "KMS_ENDPOINT", "SELLER_SECRET_KEY", "DELIVERY_SECRET_KEY"]) delete process.env[k];
+    try {
+      expect(() => resolveKmsSigner()).toThrow(/No seller signing key configured/);
+    } finally {
+      process.env = saved;
+    }
   });
+
+  it("rejects a remote signature that doesn't match the configured public key", async () => {
+    const configured = Keypair.random();
+    const other = Keypair.random();
+    const signer = resolveKmsSigner({
+      remotePublicKey: configured.publicKey(),
+      remoteSignFn: async (data) => new Uint8Array(other.sign(Buffer.from(data))),
+    });
+    await expect(signer.sign(Buffer.from("refund"))).rejects.toThrow(/doesn't verify/);
+  });
+
 });
