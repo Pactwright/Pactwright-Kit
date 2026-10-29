@@ -478,6 +478,8 @@ async function x402Scenarios(buyer: Keypair, seller: Keypair, facilitatorUrl: st
     usdcSac: USDC_SAC_ID,
     pactContractId: PACT_CONTRACT_ID,
     facilitatorUrl,
+    // When the facilitator requires API keys (it should), the seller and /pact/submit send one.
+    ...(process.env.E2E_FACILITATOR_API_KEY ? { facilitatorApiKey: process.env.E2E_FACILITATOR_API_KEY } : {}),
   };
   const deliveryKey = Keypair.fromRawEd25519Seed(Buffer.from(deliverySeed, "hex")).rawPublicKey().toString("hex");
   const route = (mode: "exact-refund" | "escrow") =>
@@ -516,7 +518,12 @@ async function x402Scenarios(buyer: Keypair, seller: Keypair, facilitatorUrl: st
       verifier: new VerifierWitness(),
     },
   });
-  const submitOptions = { facilitatorUrl, network: "stellar:testnet" as const, rpcUrl: RPC_URL };
+  const submitOptions = {
+    facilitatorUrl,
+    network: "stellar:testnet" as const,
+    rpcUrl: RPC_URL,
+    ...(process.env.E2E_FACILITATOR_API_KEY ? { apiKey: process.env.E2E_FACILITATOR_API_KEY } : {}),
+  };
 
   try {
     for (const [name, mode, path] of [
