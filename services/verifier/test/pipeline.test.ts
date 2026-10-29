@@ -261,6 +261,35 @@ describe("Verifier Engine Pipeline", () => {
       expect(adapter.name).toBeDefined();
     });
 
+    it("sends the schema, every evidence blob and the effort to the model, with no sampling parameters", async () => {
+      let sent: Record<string, unknown> | undefined;
+      const fetchImpl = (async (_url: string, init?: RequestInit) => {
+        sent = JSON.parse(String(init?.body));
+        const content = JSON.stringify({ detectedLanguage: "es", pageCount: 1, isTranslationOfSource: true, untranslatedSegments: 0, notes: "" });
+        return new Response(JSON.stringify({ choices: [{ message: { content } }] }));
+      }) as typeof fetch;
+      const adapter = new ProviderNeutralLLMAdapter({ apiKey: "k", modelId: "m", effort: "low", fetchImpl });
+      const reading = await adapter.read(testReadingSchema, "instructions", [
+        { mimeType: "text/plain", data: Buffer.from("Hola, gracias") },
+        { mimeType: "image/png", data: Buffer.from([1, 2, 3]) },
+      ]);
+      expect(reading).not.toBe("refusal");
+      expect(sent?.["reasoning_effort"]).toBe("low");
+      for (const p of ["temperature", "top_p", "top_k"]) expect(sent).not.toHaveProperty(p);
+      const user = JSON.stringify((sent?.["messages"] as unknown[])[1]);
+      expect(user).toContain("Hola, gracias");
+      expect(user).toContain("detectedLanguage");
+      expect(user).toContain("data:image/png;base64,AQID");
+    });
+
+    it("refuses evidence types it can't show the model", async () => {
+      const fetchImpl = (async () => new Response("{}")) as typeof fetch;
+      const adapter = new ProviderNeutralLLMAdapter({ apiKey: "k", modelId: "m", fetchImpl });
+      await expect(
+        adapter.read(testReadingSchema, "i", [{ mimeType: "application/pdf", data: Buffer.from("%PDF") }]),
+      ).rejects.toThrow(/can't be sent to the model/);
+    });
+
     it("fails closed instead of inventing a reading when no model is configured", async () => {
       const adapter = new ProviderNeutralLLMAdapter({ apiKey: "", modelId: "" });
       await expect(

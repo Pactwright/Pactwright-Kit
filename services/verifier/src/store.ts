@@ -6,8 +6,14 @@
 import type { VerdictEnvelope } from "./types.ts";
 
 export class DuplicateVerdictError extends Error {
-  constructor(public readonly pactId: string, public readonly milestone: string, public readonly existing: string) {
+  readonly pactId: string;
+  readonly milestone: string;
+  readonly existing: string;
+  constructor(pactId: string, milestone: string, existing: string) {
     super(`a verdict for pact ${pactId} milestone ${milestone} already exists (${existing})`);
+    this.pactId = pactId;
+    this.milestone = milestone;
+    this.existing = existing;
     this.name = "DuplicateVerdictError";
   }
 }

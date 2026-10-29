@@ -104,13 +104,18 @@ describe("MemoryVerdictStore", () => {
 describe("loadVerifierConfig", () => {
   const env = {
     VERIFIER_PROVIDER: "example", VERIFIER_MODEL: "model-1", VERIFIER_SECRET_KEY: key.secret(),
-    FACILITATOR_URL: "https://facilitator.example", EVIDENCE_BUCKET_URL: "s3://evidence",
+    VERIFIER_LLM_API_KEY: "test-key", FACILITATOR_URL: "https://facilitator.example", EVIDENCE_BUCKET_URL: "s3://evidence",
   };
   it("loads a complete config with defaults", () => {
     const config = loadVerifierConfig(env);
     expect(config.verifierKey.publicKey()).toBe(G);
     expect(config.port).toBe(8787);
     expect(config.nonDeliveryTimeoutSec).toBe(300);
+    expect(config.llmApiKey).toBe("test-key");
+  });
+  it("listens on the host's PORT unless VERIFIER_PORT is set", () => {
+    expect(loadVerifierConfig({ ...env, PORT: "10000" }).port).toBe(10000);
+    expect(loadVerifierConfig({ ...env, PORT: "10000", VERIFIER_PORT: "9000" }).port).toBe(9000);
   });
   it("reports every problem at once", () => {
     try {
@@ -119,6 +124,7 @@ describe("loadVerifierConfig", () => {
     } catch (e) {
       const problems = (e as VerifierConfigError).problems.join("\n");
       expect(problems).toMatch(/VERIFIER_PROVIDER is not set/);
+      expect(problems).toMatch(/VERIFIER_LLM_API_KEY is not set/);
       expect(problems).toMatch(/VERIFIER_SECRET_KEY is not a valid/);
       expect(problems).toMatch(/VERIFIER_PORT must be a positive integer/);
     }

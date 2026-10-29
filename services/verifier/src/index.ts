@@ -17,3 +17,4 @@ export {
   DEFAULT_REDACTION_RULES,
   type RedactionRule,
 } from "./privacy.ts";
+export { createEvidenceLoader, EvidenceFetchError, DEFAULT_MAX_EVIDENCE_BYTES, type EvidenceLoaderOptions } from "./evidence.ts";
