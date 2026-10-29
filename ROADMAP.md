@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **50 / 54 tasks (93%)** |
+| Progress | **51 / 54 tasks (94%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -17,7 +17,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 |---|---|---|---|
 | Foundations (this repo) | 7 | 7 | 100% |
 | Phase 3 — Kit | 18 | 17 | 94% |
-| Phase 4 — Verifier | 12 | 11 | 92% |
+| Phase 4 — Verifier | 12 | 12 | 100% |
 | Phase 7 — v1 | 10 | 8 | 80% |
 | Phase 9 — v2 | 7 | 7 | 100% |
 
@@ -69,7 +69,7 @@ Trustworthy, reproducible verdicts for one condition kind.
 - [x] **V-07** `non-delivery.ts`: seller webhook challenge → DENY on timeout — wave · H · V-05 · FR-V6 (#71, 2026-10-29)
 - [x] **V-08** Eval set (≥ 50 labelled cases) + accuracy script + `verifier-eval.yml` (fails < 90%) — wave · H · V-04 (#72, 2026-10-29)
 - [x] **V-09** `verify.minAmount` handling (receipt-only below threshold) — wave · M · V-05 · FR-V7 (#72, 2026-10-29)
-- [~] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 — live on Render with evidence in Pactwright/pactwright-evidence; escrow attestations now carry the real current ledger (they had a fixed 100, which `record_verdict` rejects); done when a hosted verdict is accepted on testnet
+- [x] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 (#94, 2026-10-29)
 - [x] **V-12** Real-model accuracy: run the labelled eval set through the configured model (not hand-written readings) and gate on ≥ 90% (#80) — core · H · V-10 · PRD §8 (#92, 2026-10-29)
 - [x] **V-11** Measure verification latency; set default deadline lengths; answer Q6 — core · M · V-10 · Q6 (#72, 2026-10-29)
 
@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #94 | V-10 → `[x]` | Live on testnet: the hosted verifier read evidence from Pactwright/pactwright-evidence with its model, signed ALLOW 1 USDC at issued_ledger 5453756, and `record_verdict` accepted it (pact 40725564…, record_verdict 0225f78b…, settle 1f4ab38c…). Reusable as `pnpm e2e:hosted-verifier`. |
 | 2026-10-29 | verifier ledger | V-10 stays `[~]` | The hosted verifier stamped escrow attestations with ledger 100, so `record_verdict` would reject them; it now reads the latest ledger from STELLAR_RPC_URL and refuses to sign without one. |
 | 2026-10-29 | #92 | V-12 → `[x]` | Real-model eval: 29/29 (100%) on the labelled `document.translation` cases through the full pipeline with Google `gemini-3.5-flash-lite` (run 40897633766). Got there by fixing the empty base URL, adding a request timeout (a run hung 35 min) and 429/503 retries. The Render verifier now uses the same model config. |
 | 2026-10-29 | #92 | — (V-12) | The first real-model eval run failed before reaching the model: an empty `LLM_BASE_URL` (unset CI variable) became the base URL, so every call went to `/chat/completions`. Empty now means the provider default. |
