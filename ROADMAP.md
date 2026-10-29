@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **48 / 52 tasks (92%)** |
+| Progress | **47 / 54 tasks (87%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -16,8 +16,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Section | Tasks | Done | % |
 |---|---|---|---|
 | Foundations (this repo) | 7 | 7 | 100% |
-| Phase 3 — Kit | 17 | 16 | 94% |
-| Phase 4 — Verifier | 11 | 11 | 100% |
+| Phase 3 — Kit | 18 | 16 | 89% |
+| Phase 4 — Verifier | 12 | 10 | 83% |
 | Phase 7 — v1 | 10 | 7 | 70% |
 | Phase 9 — v2 | 7 | 7 | 100% |
 
@@ -53,6 +53,7 @@ SDK, MCP and CLI for M0 and M2.
 - [x] **K-14** Vendor `@witness/core` under `vendor/witness-core/` with NOTICE — wave · T · K-01 (#65, 2026-10-28)
 - [x] **K-15** Examples: `seller-express`, `agent-node` — wave · M · K-09 (#72, 2026-10-29)
 - [x] **K-16** `e2e-testnet.yml` nightly covering every MVP scenario in ARCH §13 — wave · H · K-09, V-10, S-04 (#76, 2026-10-29)
+- [ ] **K-18** Drop `shardId` from `CertificateSchema` and the ARCHITECTURE copy (#82) — wave · T · S-04
 - [ ] **K-17** Publish `@pactwright/*` 0.1.0 to npm — core · T · K-16 — reopened: `@pactwright/*` is not on npm (E404); needs the npm scope (F-01) and a token
 
 ## Phase 4 — Verifier
@@ -68,7 +69,8 @@ Trustworthy, reproducible verdicts for one condition kind.
 - [x] **V-07** `non-delivery.ts`: seller webhook challenge → DENY on timeout — wave · H · V-05 · FR-V6 (#71, 2026-10-29)
 - [x] **V-08** Eval set (≥ 50 labelled cases) + accuracy script + `verifier-eval.yml` (fails < 90%) — wave · H · V-04 (#72, 2026-10-29)
 - [x] **V-09** `verify.minAmount` handling (receipt-only below threshold) — wave · M · V-05 · FR-V7 (#72, 2026-10-29)
-- [x] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 (#72, 2026-10-29)
+- [~] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 — reopened: Dockerfile exists, but no testnet verifier is deployed (#79)
+- [ ] **V-12** Real-model accuracy: run the labelled eval set through the configured model (not hand-written readings) and gate on ≥ 90% (#80) — core · H · V-10 · PRD §8
 - [x] **V-11** Measure verification latency; set default deadline lengths; answer Q6 — core · M · V-10 · Q6 (#72, 2026-10-29)
 
 ## Phase 7 — v1
@@ -102,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #84 | V-10 → `[~]`; V-12, K-18 added | Readiness review: no testnet verifier is deployed (V-10, #79); the eval scores rules on hand-written readings, so real-model accuracy is new (V-12, #80); `shardId` cleanup (K-18, #82). Also opened #78 (hosted facilitator), #81 (npm scope), #83 (KMS). |
 | 2026-10-29 | #77 | K-06, K-08, K-09, K-13, V-06 → `[x]` (rebuilt); K-16 → `[x]` | Real x402. Seller `pact()`/`pactHono()`: valid x402 v2 402 (token contract, integer amount), payments verified and settled by the facilitator before anything is served (they were served for any `X-Payment` header), `pact_id` derived from the verified payer and nonce, no default payee / delivery key / verifier. Agent `buy`: reads the 402, refuses terms that differ from the listing or frozen condition, pays with `@x402/stellar` exact (M0) or the new `PactClientScheme` (M2). Wallet `signAuthEntry` follows SEP-43. Verifier `submit()` and seller auto-settle send real transactions through `/pact/submit` (`@pactwright/contracts-client/submit`). Testnet: x402 M0 and M2 through Accensa's facilitator (accensa/x402-facilitator-stellar#651), 18/18 transactions SUCCESS. K-16: nightly workflow passed in CI with the repo secret. |
 | 2026-10-29 | #75 | K-07 → `[x]`; K-08, K-09, K-13, P7-08, P7-12, P7-13 → `[~]` | Real testnet e2e (`e2e/testnet`, `pnpm e2e:testnet`): all 7 MVP scenarios as 14 real transactions on the deployed `pact` with testnet USDC and a fresh RefundVault, driven by the Kit's hashing, verifier rules and signing, contract client and seller hooks; Kit `pact_id` checked against the contract on every `open`. Seller refund/settle hooks send real transactions. Verifier now verifies the seller's delivery-receipt signature (FR-V2), fails closed without a configured model or key, and no longer lets delivery text trigger a refusal. Removed every invented transaction hash and fail-open fallback (KMS random key, Vespi auto-approve on error, Pollar unsigned entry, agent `buy`, account hashes of unsent transactions). The model ID must now be configured (no hard-coded default). Nightly workflow generates its summary from the real report. 384 tests pass. |
 | 2026-10-29 | #74 | K-07, K-16 → `[~]`; K-17 → `[ ]` | Removed unverifiable claims: the README's "Testnet Verified Transactions" table (7 links to transactions that don't exist on testnet) and the e2e workflow's hard-coded PASS summary. The workflow is manual-only until the real testnet runner lands. Reopened tasks whose done-criteria weren't met. |
