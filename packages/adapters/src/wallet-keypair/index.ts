@@ -1,6 +1,6 @@
 /** Agent keypair wallet (MVP). ROADMAP K-13. */
 import { Keypair } from "@pactwright/core";
-import { xdr } from "@stellar/stellar-base";
+import { hash, xdr } from "@stellar/stellar-base";
 import type { AuthEntry, Wallet } from "../types.ts";
 
 export class WalletKeypair implements Wallet {
@@ -26,16 +26,22 @@ export class WalletKeypair implements Wallet {
     return this.keypair;
   }
 
+  /**
+   * SEP-43 `signAuthEntry`: signs sha256 of the authorization preimage, the message Soroban
+   * verifies for address credentials. Anything that isn't a Soroban authorization preimage is
+   * refused rather than signed.
+   */
   async signAuthEntry(entry: AuthEntry): Promise<AuthEntry> {
+    let preimage: xdr.HashIdPreimage;
     try {
-      const authEntry = xdr.SorobanAuthorizationEntry.fromXDR(entry, "base64");
-      const signature = this.keypair.sign(authEntry.toXDR());
-      // Return base64 signature or encoded entry
-      return Buffer.from(signature).toString("base64");
+      preimage = xdr.HashIdPreimage.fromXDR(entry, "base64");
     } catch {
-      // If raw payload or mock string
-      const signature = this.keypair.sign(Buffer.from(entry, "utf8"));
-      return Buffer.from(signature).toString("base64");
+      throw new Error("not a Soroban authorization preimage (base64 HashIdPreimage XDR)");
     }
+    if (preimage.switch() !== xdr.EnvelopeType.envelopeTypeSorobanAuthorization()) {
+      throw new Error("refusing to sign: preimage is not a Soroban authorization");
+    }
+    return Buffer.from(this.keypair.sign(hash(preimage.toXDR()))).toString("base64");
   }
+
 }

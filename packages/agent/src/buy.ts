@@ -1,10 +1,19 @@
-/** 402 → exact pay (M0) or pact open (M2) → response body + delivery receipt. */
-import { conditionHash, nonceFromIdempotencyKey, pactId, type PactTerms } from "@pactwright/core";
+/**
+ * Buy over x402 (ROADMAP K-08, K-09): request → 402 → check the seller's terms → pay → retry →
+ * response body + delivery receipt + the settled payment's transaction.
+ */
+import { conditionHash, nonceFromIdempotencyKey, pactId, toStroops, type PactTerms } from "@pactwright/core";
 import type { RankedListing } from "@pactwright/adapters";
+import { x402Client, x402HTTPClient } from "@x402/core/client";
+import type { PaymentRequired, PaymentRequirements } from "@x402/core/types";
 import type { PactwrightConfig } from "./client.ts";
+import { x402Payment } from "./x402.ts";
+
+/** The u64 nonce in the buyer's `pact_id`, so the seller can derive the same id. */
+export const NONCE_HEADER = "X-Pactwright-Nonce";
 
 export interface BuyOptions {
-  /** Frozen before payment; its hash goes into the pact. */
+  /** Frozen before payment; its hash goes into the pact. The seller must ask for exactly this. */
   condition: Record<string, unknown>;
   /** Same key on retry → same nonce → same pact (no duplicates). */
   idempotencyKey: string;
@@ -18,7 +27,7 @@ export interface Pact {
   body: Uint8Array;
   /** Raw X-Pactwright-Delivery header. */
   deliveryReceipt?: string;
-  /** Hash of the settled payment (M0 transfer or M2 `open`), when the provider or seller reports it. */
+  /** Hash of the settled payment (M0 transfer or M2 `open`), from the seller's `PAYMENT-RESPONSE`. */
   paymentTx?: string;
 }
 
@@ -31,45 +40,65 @@ export interface PaymentRequest {
   amount: string;
   nonce: bigint;
   conditionHash: string;
+  /** The seller's 402, and the one requirement the agent chose to pay. */
+  paymentRequired: PaymentRequired;
+  requirement: PaymentRequirements;
 }
 
 /**
- * Builds the x402 payment: a signed USDC transfer (M0) or a signed `pact.open` (M2). It must
- * produce something a facilitator can verify and settle on-chain (ROADMAP K-08, K-09).
+ * Builds the x402 payment headers: a signed USDC transfer (M0) or a signed `pact.open` (M2) that
+ * a facilitator can verify and settle on-chain. The default is `x402Payment` with the agent's wallet.
  */
 export interface PaymentProvider {
-  pay(request: PaymentRequest): Promise<{ header: string; paymentTx?: string }>;
+  pay(request: PaymentRequest): Promise<{ headers: Record<string, string> }>;
 }
 
-export async function buy(
-  config: PactwrightConfig,
-  listing: RankedListing,
-  options: BuyOptions,
-): Promise<Pact> {
+export async function buy(config: PactwrightConfig, listing: RankedListing, options: BuyOptions): Promise<Pact> {
+  if (listing.mode !== "exact-refund" && listing.mode !== "escrow") {
+    throw new Error(`Unsupported mode: ${(listing as { mode: string }).mode}`);
+  }
   const gateRes = await config.adapters.gate.approveBudget({
     agent: config.wallet.address(),
     amount: listing.price,
     asset: "USDC",
   });
-
-  if (!gateRes.approved) {
-    throw new Error("Budget approval rejected by gate");
-  }
+  if (!gateRes.approved) throw new Error("Budget approval rejected by gate");
 
   const condHash = conditionHash(options.condition);
   const nonce = nonceFromIdempotencyKey(options.idempotencyKey);
   const buyer = config.wallet.address();
   const seller = listing.seller;
   const pId = pactId(buyer, seller, nonce, condHash);
+  const doFetch = options.fetchImpl ?? config.fetchImpl ?? globalThis.fetch;
+  const send = (extra: Record<string, string>) =>
+    doFetch(listing.resourceUrl, {
+      method: options.request?.method ?? "POST",
+      headers: { ...options.request?.headers, [NONCE_HEADER]: nonce.toString(), ...extra },
+      body: options.request?.body,
+    });
 
-  // No payment provider, no purchase: never send a payment header that pays nothing.
-  if (!config.payment) {
-    throw new Error("agent buy needs a payment provider (config.payment): see ROADMAP K-08 / K-09");
+  // 1. Ask, and expect the seller's 402.
+  const first = await send({});
+  if (first.status !== 402) throw new Error(`expected 402 Payment Required, got HTTP ${first.status}`);
+  const http = new x402HTTPClient(new x402Client());
+  const paymentRequired = http.getPaymentRequiredResponse(
+    (name) => first.headers.get(name),
+    await first.json().catch(() => undefined),
+  );
+
+  // 2. Pay only for what was agreed: the right scheme, seller, price and frozen condition.
+  const scheme = listing.mode === "escrow" ? "pact" : "exact";
+  const requirement = paymentRequired.accepts.find((r) => r.scheme === scheme);
+  if (!requirement) throw new Error(`seller does not accept the ${scheme} scheme`);
+  if (requirement.payTo !== seller) throw new Error("402 names a different payee than the listing");
+  if (BigInt(requirement.amount) > toStroops(listing.price)) throw new Error("402 asks for more than the listing price");
+  const sellerCondition = (requirement.extra.pactwright as { condition?: Record<string, unknown> } | undefined)?.condition;
+  if (!sellerCondition || conditionHash(sellerCondition) !== condHash) {
+    throw new Error("402 names a different condition than the buyer froze");
   }
-  if (listing.mode !== "exact-refund" && listing.mode !== "escrow") {
-    throw new Error(`Unsupported mode: ${(listing as { mode: string }).mode}`);
-  }
-  const payment = await config.payment.pay({
+
+  const payment = config.payment ?? x402Payment({ wallet: config.wallet, rpcUrl: config.network.rpcUrl });
+  const { headers } = await payment.pay({
     mode: listing.mode,
     pactId: pId,
     buyer,
@@ -77,36 +106,29 @@ export async function buy(
     amount: listing.price,
     nonce,
     conditionHash: condHash,
-  });
-  const paymentHeader = payment.header;
-
-  const doFetch = options.fetchImpl ?? config.fetchImpl ?? globalThis.fetch;
-  const method = options.request?.method ?? "POST";
-  const headers: Record<string, string> = {
-    ...options.request?.headers,
-    "X-Payment": paymentHeader,
-    "X-Pactwright-Pact": pId,
-    "X-Pactwright-Idempotency": options.idempotencyKey,
-  };
-
-  const res = await doFetch(listing.resourceUrl, {
-    method,
-    headers,
-    body: options.request?.body,
+    paymentRequired,
+    requirement,
   });
 
+  // 3. Retry with the payment.
+  const res = await send(headers);
   if (res.status === 409) {
     const errBody = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(errBody.error ?? `Pact ${pId} is in a terminal state or has already been served.`);
+    throw new Error(errBody.error ?? `Pact ${pId} was already served.`);
   }
-
   if (!res.ok) {
-    throw new Error(`Buy request failed with HTTP ${res.status}`);
+    const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(`Buy failed with HTTP ${res.status}${errBody.error ? `: ${errBody.error}` : ""}`);
   }
 
-  const bodyBytes = new Uint8Array(await res.arrayBuffer());
-  const deliveryReceipt = res.headers.get("x-pactwright-delivery") ?? undefined;
-  const paymentTx = payment.paymentTx ?? settledTx(res.headers.get("x-payment-response"));
+  const settlement = (() => {
+    try {
+      return http.getPaymentSettleResponse((name) => res.headers.get(name));
+    } catch {
+      return undefined;
+    }
+  })();
+  const paymentTx = settlement?.success && /^[0-9a-f]{64}$/i.test(settlement.transaction) ? settlement.transaction : undefined;
 
   const terms: PactTerms = {
     pactId: pId,
@@ -121,26 +143,13 @@ export async function buy(
     verifier: listing.verifier,
     metered: false,
     silence: listing.silence,
-    verdictDeadline: 120,
-    settleDeadline: 720,
     refundWindowLedgers: listing.refundWindowLedgers,
   };
 
   return {
     terms,
-    body: bodyBytes,
-    deliveryReceipt,
+    body: new Uint8Array(await res.arrayBuffer()),
+    deliveryReceipt: res.headers.get("x-pactwright-delivery") ?? undefined,
     ...(paymentTx ? { paymentTx } : {}),
   };
-}
-
-/** x402 `X-Payment-Response`: base64 JSON whose `transaction` is the settled payment's hash. */
-function settledTx(header: string | null): string | undefined {
-  if (!header) return undefined;
-  try {
-    const decoded = JSON.parse(Buffer.from(header, "base64").toString("utf8")) as { transaction?: unknown };
-    return typeof decoded.transaction === "string" && /^[0-9a-f]{64}$/i.test(decoded.transaction) ? decoded.transaction : undefined;
-  } catch {
-    return undefined;
-  }
 }

@@ -64,7 +64,8 @@ export function conditionHash(condition: Record<string, unknown>): string {
   return createHash("sha256").update(Buffer.from(canonical, "utf8")).digest("hex");
 }
 
-export function verdictMessage(attestation: VerdictAttestation): Uint8Array {
+/** A `VerdictAttestation` as the contract's `#[contracttype]` struct (a map with sorted keys). */
+export function verdictAttestationScVal(attestation: VerdictAttestation): xdr.ScVal {
   const amountBigInt = typeof attestation.amount === "bigint" ? attestation.amount : BigInt(attestation.amount);
   const verdictStr = String(attestation.verdict).toUpperCase();
   const verdictVal = verdictStr === "ALLOW" ? 1 : 2;
@@ -96,7 +97,11 @@ export function verdictMessage(attestation: VerdictAttestation): Uint8Array {
     }),
   ]);
 
-  const xdrBytes = map.toXDR();
+  return map;
+}
+
+export function verdictMessage(attestation: VerdictAttestation): Uint8Array {
+  const xdrBytes = verdictAttestationScVal(attestation).toXDR();
   const domain = Buffer.from(VERDICT_DOMAIN, "utf8");
   return new Uint8Array(createHash("sha256").update(Buffer.concat([domain, xdrBytes])).digest());
 }

@@ -37,7 +37,11 @@ export interface BudgetResult {
   fundingTx?: string;
 }
 
-/** A Soroban authorization entry, base64 XDR. */
+/**
+ * SEP-43: the base64 XDR `HashIdPreimage` (envelope type `SorobanAuthorization`) a wallet signs
+ * when it authorizes a Soroban call, and, as a return value, the base64 ed25519 signature over its
+ * sha256. This is what `AssembledTransaction.signAuthEntries` and the x402 Stellar signers use.
+ */
 export type AuthEntry = string;
 
 export interface VerdictInput {

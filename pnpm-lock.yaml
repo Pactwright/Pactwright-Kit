@@ -35,6 +35,12 @@ importers:
 
   e2e/testnet:
     dependencies:
+      '@pactwright/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@pactwright/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@pactwright/contracts-client':
         specifier: workspace:*
         version: link:../../packages/contracts-client
@@ -50,6 +56,13 @@ importers:
       '@stellar/stellar-sdk':
         specifier: ^16.4.1
         version: 16.4.1
+      express:
+        specifier: ^5.1.0
+        version: 5.3.0
+    devDependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
 
   examples/agent-node:
     dependencies:
@@ -62,6 +75,9 @@ importers:
       '@pactwright/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@x402/core':
+        specifier: 2.28.0
+        version: 2.28.0
 
   examples/metered-minutes:
     dependencies:
@@ -93,6 +109,9 @@ importers:
       '@pactwright/seller':
         specifier: workspace:*
         version: link:../../packages/seller
+      '@x402/core':
+        specifier: 2.28.0
+        version: 2.28.0
       express:
         specifier: ^5.0.0
         version: 5.3.0
@@ -127,6 +146,12 @@ importers:
       '@stellar/stellar-sdk':
         specifier: ^16.4.1
         version: 16.4.1
+      '@x402/core':
+        specifier: 2.28.0
+        version: 2.28.0
+      '@x402/stellar':
+        specifier: 2.28.0
+        version: 2.28.0
 
   packages/cli:
     dependencies:
@@ -184,6 +209,9 @@ importers:
       '@accensa/sdk':
         specifier: workspace:*
         version: link:../../vendor/accensa-sdk
+      '@pactwright/contracts-client':
+        specifier: workspace:*
+        version: link:../contracts-client
       '@pactwright/core':
         specifier: workspace:*
         version: link:../core
@@ -193,6 +221,9 @@ importers:
       '@stellar/stellar-sdk':
         specifier: ^16.4.1
         version: 16.4.1
+      '@x402/core':
+        specifier: 2.28.0
+        version: 2.28.0
     devDependencies:
       '@types/express':
         specifier: ^5.0.0
@@ -209,6 +240,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.19.0
         version: 1.19.17(hono@4.13.14)
+      '@pactwright/contracts-client':
+        specifier: workspace:*
+        version: link:../../packages/contracts-client
       '@pactwright/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -667,6 +701,13 @@ packages:
 
   '@vitest/utils@4.1.12':
     resolution: {integrity: sha512-Q3awXrwOfEV+qc3WmO5ONyE0yO7Q1gQ9/oyHxGLZ/pl7N3NO/ZztqQwKLuwMkV+CA1JYSIeO3gkHnRDIo4AVaA==}
+
+  '@x402/core@2.28.0':
+    resolution: {integrity: sha512-Da/7zKxCKqpBoB4Msc9tFgkAv7tJTD8nG+DSSm+QdXAyJS4PQsmgVSKe17rDJTtlu0pwNbLcOje6MyQ6kaDkig==}
+
+  '@x402/stellar@2.28.0':
+    resolution: {integrity: sha512-H/P46YVVEvJmnXlss8fJBNGgjaLkp3pWJ6PH2uOJY+jVemugUoQPArwtQKNovEV2BnF0gnJ+sdaRg+4Gucu6jQ==}
+    engines: {node: '>=22.0.0'}
 
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
@@ -1941,6 +1982,9 @@ packages:
     peerDependencies:
       zod: ^3.25.28 || ^4
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
@@ -2491,6 +2535,18 @@ snapshots:
       '@vitest/pretty-format': 4.1.12
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
+
+  '@x402/core@2.28.0':
+    dependencies:
+      zod: 3.25.76
+
+  '@x402/stellar@2.28.0':
+    dependencies:
+      '@stellar/stellar-sdk': 16.4.1
+      '@x402/core': 2.28.0
+    transitivePeerDependencies:
+      - debug
+      - supports-color
 
   accepts@2.0.0:
     dependencies:
@@ -3662,5 +3718,7 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@4.6.7):
     dependencies:
       zod: 4.6.7
+
+  zod@3.25.76: {}
 
   zod@4.6.7: {}

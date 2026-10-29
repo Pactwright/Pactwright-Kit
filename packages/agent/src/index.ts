@@ -1,5 +1,6 @@
 export { createPactwright, type Pactwright, type PactwrightConfig } from "./client.ts";
-export { buy, type BuyOptions, type Pact, type PaymentProvider, type PaymentRequest } from "./buy.ts";
+export { buy, NONCE_HEADER, type BuyOptions, type Pact, type PaymentProvider, type PaymentRequest } from "./buy.ts";
+export { x402Payment, PactClientScheme, walletSigner } from "./x402.ts";
 export { awaitPact, type AwaitOptions } from "./await.ts";
 export {
   createAgentAccount,

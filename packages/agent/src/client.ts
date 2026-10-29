@@ -11,7 +11,7 @@ export interface PactwrightConfig {
   wallet: Wallet;
   verifierUrl: string;
   facilitatorUrl?: string;
-  /** Pays for purchases. Without one, `buy` refuses to run. */
+  /** Pays for purchases. Default: `x402Payment` with `wallet` (signed auth entries, facilitator-paid fees). */
   payment?: PaymentProvider;
   fetchImpl?: typeof fetch;
   adapters: {

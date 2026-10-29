@@ -2,6 +2,7 @@
 import { createSettleHook } from "@accensa/sdk";
 import { toStroops } from "@pactwright/core";
 import { invokeContract, scv, type ChainOptions } from "../chain.ts";
+import { submitPactCall, type PactSubmitOptions } from "@pactwright/contracts-client/submit";
 
 export { createSettleHook };
 
@@ -13,11 +14,14 @@ export interface VerdictNotification {
 }
 
 export interface AutoSettleOptions {
-  facilitatorUrl?: string;
   pactContractId?: string;
-  /** Settle directly on-chain, signed by the seller, instead of through the facilitator. */
+  /** Settle directly on-chain, signed by the seller, who pays the fee. */
   chain?: ChainOptions;
-  fetchImpl?: typeof fetch;
+  /**
+   * Settle through the facilitator's `/pact/submit`, which pays the fee. The seller still signs
+   * its own authorization (`signer`).
+   */
+  facilitator?: Omit<PactSubmitOptions, "pactContractId">;
 }
 
 export interface AutoSettleResult {
@@ -51,49 +55,14 @@ export async function handleAutoSettle(
     return { settled: true, txHash: sent.txHash, pactId, amount: allowedAmount };
   }
 
-  // Through the facilitator's /pact/submit (fee-sponsored), once the `pact` scheme exists (ROADMAP X-04).
-  const facilitatorUrl = options?.facilitatorUrl ?? process.env.FACILITATOR_URL;
-  if (!facilitatorUrl) throw new Error("auto-settle needs either chain options or FACILITATOR_URL");
-  const doFetch = options?.fetchImpl ?? globalThis.fetch;
-
-  if (typeof doFetch !== "function") {
-    throw new Error("No fetch implementation available for auto-settle");
-  }
-
-  const url = `${facilitatorUrl.replace(/\/$/, "")}/pact/submit`;
-  const body = {
-    action: "settle",
-    pact_id: pactId,
-    actual: allowedAmount ?? "0",
-  };
-
-  try {
-    const res = await doFetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      throw new Error(`Facilitator /pact/submit failed with HTTP ${res.status}`);
-    }
-
-    interface SubmitResponse {
-      txHash?: string;
-      success?: boolean;
-    }
-
-    const data = (await res.json()) as SubmitResponse;
-    if (!data.txHash) throw new Error("facilitator did not return a transaction hash");
-    return {
-      settled: true,
-      txHash: data.txHash,
-      pactId,
-      amount: allowedAmount,
-    };
-  } catch (err) {
-    throw new Error(`Failed to auto-settle pact ${pactId}: ${String(err)}`);
-  }
+  if (!options?.facilitator) throw new Error("auto-settle needs chain or facilitator options");
+  if (!pactContractId) throw new Error("auto-settle needs pactContractId");
+  if (!options.facilitator.signer) throw new Error("settling through the facilitator needs the seller's signer");
+  const sent = await submitPactCall("settle", [scv.bytes32(pactId), scv.i128(toStroops(allowedAmount ?? "0"))], {
+    ...options.facilitator,
+    pactContractId,
+  });
+  return { settled: true, txHash: sent.transaction, pactId, amount: allowedAmount };
 }
 
 export async function onSettled(event: unknown): Promise<void> {

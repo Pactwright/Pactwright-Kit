@@ -1,83 +1,84 @@
-import { describe, it, expect } from "vitest";
+/** Hono middleware: the same paywall as Express (P7-07, FR-I3). */
+import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
 import { Keypair } from "@stellar/stellar-base";
+import { encodePaymentSignatureHeader } from "@x402/core/http";
+import type { FacilitatorClient } from "@x402/core/server";
+import type { PaymentPayload } from "@x402/core/types";
 import { pactHono } from "../src/hono.ts";
+import { clearTerminalPacts } from "../src/express.ts";
 import { parseDeliveryHeader, DELIVERY_HEADER } from "../src/delivery.ts";
-import type { PactRouteOptions } from "../src/pact.ts";
+import type { PactRouteOptions, SellerConfig } from "../src/pact.ts";
+
+const USDC = "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA";
+const seller = Keypair.random().publicKey();
+const buyer = Keypair.random().publicKey();
+
+const config: SellerConfig = {
+  sellerAddress: seller,
+  deliverySecret: "01".repeat(32),
+  verifierPublicKey: "11".repeat(32),
+  verifierUrl: "https://verifier.example",
+  usdcSac: USDC,
+  facilitatorUrl: "https://facilitator.example",
+};
+
+const routeOptions: PactRouteOptions<unknown> = {
+  mode: "exact-refund",
+  price: "0.25",
+  asset: "USDC",
+  condition: () => ({ kind: "document.translation", lang: "pt", minPages: 1 }),
+  refundWindowLedgers: 100,
+};
+
+function facilitator(valid = true) {
+  return {
+    verify: vi.fn(async () => (valid ? { isValid: true, payer: buyer } : { isValid: false, invalidReason: "bad" })),
+    settle: vi.fn(async () => ({ success: true, transaction: "ab".repeat(32), network: "stellar:testnet", payer: buyer })),
+    getSupported: vi.fn(),
+  };
+}
+
+function app(fac: ReturnType<typeof facilitator>) {
+  const a = new Hono();
+  a.use("/api/data", pactHono(routeOptions, config, fac as unknown as FacilitatorClient));
+  a.get("/api/data", (c) => c.json({ ok: true }));
+  return a;
+}
+
+const payment = encodePaymentSignatureHeader({
+  x402Version: 2,
+  accepted: { scheme: "exact", network: "stellar:testnet", asset: USDC, amount: "2500000", payTo: seller, maxTimeoutSeconds: 60, extra: {} },
+  payload: { transaction: "AAAA" },
+} as PaymentPayload);
 
 describe("pactHono (P7-07, FR-I3)", () => {
-  const sellerKey = Keypair.random();
-  const deliverySecret = "01".repeat(32);
-  const contractId = "CA2VU3DR3H2X47AFTW2O6J5J3EWB3G7M4RNDWJ4S5QY27ZITX72MFEV6";
-
-  const config = {
-    deliverySecret,
-    merchantAddress: sellerKey.publicKey(),
-    pactContractId: contractId,
-    refundVaultId: contractId,
-  };
-
-  const routeOptions: PactRouteOptions<unknown> = {
-    mode: "exact-refund",
-    price: "0.25",
-    asset: "USDC",
-    condition: () => ({ kind: "document.translation", lang: "pt", minPages: 1 }),
-    refundWindowLedgers: 100,
-  };
-
   it("returns 402 with PaymentRequired when no payment header is provided", async () => {
-    const app = new Hono();
-    app.use("/api/data", pactHono(routeOptions, config));
-    app.get("/api/data", (c) => c.text("secret content"));
-
-    const res = await app.request("/api/data");
+    const fac = facilitator();
+    const res = await app(fac).request("/api/data", { headers: { "X-Pactwright-Nonce": "1" } });
     expect(res.status).toBe(402);
-
-    const body = (await res.json()) as { error?: string; accepts?: unknown[] };
-    expect(body.accepts).toBeDefined();
-    expect(Array.isArray(body.accepts)).toBe(true);
+    expect(res.headers.get("payment-required")).toBeTruthy();
+    expect(fac.verify).not.toHaveBeenCalled();
   });
 
-  it("serves request and attaches signed X-Pactwright-Delivery on payment", async () => {
-    const app = new Hono();
-    app.use("/api/data", pactHono(routeOptions, config));
-    app.get("/api/data", (c) => c.text("delivered payload"));
-
-    const pactId = "88".repeat(32);
-    const paymentPayload = Buffer.from(JSON.stringify({ pact_id: pactId })).toString("base64");
-
-    const res = await app.request("/api/data", {
-      headers: {
-        "x-payment": paymentPayload,
-      },
-    });
-
+  it("serves only after the facilitator verified and settled, and signs the delivery", async () => {
+    clearTerminalPacts();
+    const fac = facilitator();
+    const res = await app(fac).request("/api/data", { headers: { "PAYMENT-SIGNATURE": payment, "X-Pactwright-Nonce": "1" } });
     expect(res.status).toBe(200);
-    const text = await res.text();
-    expect(text).toBe("delivered payload");
-
-    const deliveryHeader = res.headers.get(DELIVERY_HEADER);
-    expect(deliveryHeader).toBeDefined();
-
-    const parsed = parseDeliveryHeader(deliveryHeader!);
-    expect(parsed).not.toBeNull();
-    expect(parsed?.bodySha256).toBeDefined();
+    expect(fac.settle).toHaveBeenCalledOnce();
+    expect(parseDeliveryHeader(res.headers.get(DELIVERY_HEADER)!)).not.toBeNull();
+    expect(res.headers.get("payment-response")).toBeTruthy();
   });
 
-  it("refuses terminal pacts with 409 Conflict", async () => {
-    const app = new Hono();
-    app.use("/api/data", pactHono(routeOptions, config));
-    app.get("/api/data", (c) => c.text("delivered payload"));
-
-    const pactId = "99".repeat(32);
-    const paymentPayload = Buffer.from(JSON.stringify({ pact_id: pactId })).toString("base64");
-
-    // First request delivers and marks terminal
-    const res1 = await app.request("/api/data", { headers: { "x-payment": paymentPayload } });
-    expect(res1.status).toBe(200);
-
-    // Second request with same pact ID must be refused with 409
-    const res2 = await app.request("/api/data", { headers: { "x-payment": paymentPayload } });
-    expect(res2.status).toBe(409);
+  it("refuses an invalid payment and a pact that was already served", async () => {
+    clearTerminalPacts();
+    expect((await app(facilitator(false)).request("/api/data", { headers: { "PAYMENT-SIGNATURE": payment, "X-Pactwright-Nonce": "2" } })).status).toBe(402);
+    const fac = facilitator();
+    const a = app(fac);
+    const headers = { "PAYMENT-SIGNATURE": payment, "X-Pactwright-Nonce": "3" };
+    expect((await a.request("/api/data", { headers })).status).toBe(200);
+    expect((await a.request("/api/data", { headers })).status).toBe(409);
+    expect(fac.settle).toHaveBeenCalledOnce();
   });
 });

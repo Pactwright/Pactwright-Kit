@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { Keypair } from "@stellar/stellar-base";
 import { buildTree, type NetworkConfig, type PactTerms } from "@pactwright/core";
+import { encodePaymentRequiredHeader, encodePaymentResponseHeader } from "@x402/core/http";
 import {
   DiscoveryBazaar,
   GateManual,
@@ -69,13 +70,13 @@ describe("Pactwright Agent Runtime", () => {
     ),
   });
 
-  // Test payment provider: records what it was asked to pay. Real providers sign an x402 payment.
+  // Test payment provider: records what it was asked to pay. The default (`x402Payment`) signs a
+  // real x402 payment; e2e/testnet exercises it on-chain.
   const payments: PaymentRequest[] = [];
   const payment: PaymentProvider = {
     async pay(request) {
       payments.push(request);
-      const scheme = request.mode === "escrow" ? "pact" : "exact";
-      return { header: Buffer.from(JSON.stringify({ scheme, pact_id: request.pactId })).toString("base64") };
+      return { headers: { "PAYMENT-SIGNATURE": `paid:${request.requirement.scheme}:${request.pactId}` } };
     },
   };
 
@@ -107,104 +108,103 @@ describe("Pactwright Agent Runtime", () => {
     expect(typeof nonce1).toBe("bigint");
   });
 
-  it("executes M0 buy and captures body and delivery receipt", async () => {
-    const mockFetch = vi.fn<typeof fetch>(async () =>
-      new Response("Translated text result", {
-        status: 200,
-        headers: {
-          "Content-Type": "text/plain",
-          "X-Pactwright-Delivery": "sha256=abcdef; sig=123456",
+  /**
+   * A seller that speaks x402: 402 with its terms until it sees a payment, then the content with
+   * a delivery receipt and the settlement in PAYMENT-RESPONSE.
+   */
+  function seller(opts: { scheme: "exact" | "pact"; amount: string; condition: Record<string, unknown>; payTo?: string; afterPay?: Response }) {
+    const seen: Array<Record<string, string>> = [];
+    const required = {
+      x402Version: 2,
+      resource: { url: "https://seller.test/x", description: "", mimeType: "" },
+      accepts: [
+        {
+          scheme: opts.scheme,
+          network: "stellar:testnet",
+          asset: "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+          amount: opts.amount,
+          payTo: opts.payTo ?? VALID_ADDRESS_2,
+          maxTimeoutSeconds: 60,
+          extra: { areFeesSponsored: true, pactwright: { condition: opts.condition } },
         },
-      }),
-    );
-
-    const listings = await pw.find({ query: "translate" });
-    const listing = listings[0]!;
-
-    const pact = await pw.buy(listing, {
-      condition: { kind: "document.translation", lang: "es" },
-      idempotencyKey: "idem_key_m0",
-      fetchImpl: mockFetch,
+      ],
+    };
+    const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
+      const headers = (init?.headers ?? {}) as Record<string, string>;
+      seen.push(headers);
+      if (!headers["PAYMENT-SIGNATURE"]) {
+        return new Response(JSON.stringify(required), {
+          status: 402,
+          headers: { "PAYMENT-REQUIRED": encodePaymentRequiredHeader(required as never) },
+        });
+      }
+      return (
+        opts.afterPay ??
+        new Response("Translated text result", {
+          status: 200,
+          headers: {
+            "X-Pactwright-Delivery": "sha256=abcdef; sig=123456",
+            "PAYMENT-RESPONSE": encodePaymentResponseHeader({ success: true, transaction: "ef".repeat(32), network: "stellar:testnet" }),
+          },
+        })
+      );
     });
+    return { fetchImpl, seen };
+  }
+
+  it("M0: reads the 402, pays the exact scheme, and returns body, receipt and settled tx", async () => {
+    const condition = { kind: "document.translation", lang: "es" };
+    const s = seller({ scheme: "exact", amount: "10000000", condition });
+    const listing = (await pw.find({ query: "translate" }))[0]!;
+    const pact = await pw.buy(listing, { condition, idempotencyKey: "idem_key_m0", fetchImpl: s.fetchImpl });
 
     expect(pact.terms.mode).toBe("exact-refund");
-    expect(pact.terms.cap).toBe("1.00");
     expect(pact.deliveryReceipt).toBe("sha256=abcdef; sig=123456");
+    expect(pact.paymentTx).toBe("ef".repeat(32));
     expect(Buffer.from(pact.body).toString("utf8")).toBe("Translated text result");
-    expect(mockFetch).toHaveBeenCalledOnce();
+    expect(s.seen).toHaveLength(2);
+    expect(s.seen[1]!["PAYMENT-SIGNATURE"]).toBe(`paid:exact:${pact.terms.pactId}`);
+    expect(s.seen[1]!["X-Pactwright-Nonce"]).toBe(pact.terms.nonce);
   });
 
-  it("idempotency retry creates the exact same pactId and nonce", async () => {
-    const mockFetch = vi.fn<typeof fetch>(async () =>
-      new Response("Same result", { status: 200 }),
-    );
-
-    const listings = await pw.find({ query: "translate" });
-    const listing = listings[0]!;
-    const condition = { kind: "document.translation", lang: "es" };
-
-    const pact1 = await pw.buy(listing, {
-      condition,
-      idempotencyKey: "repeatable_key",
-      fetchImpl: mockFetch,
-    });
-
-    const pact2 = await pw.buy(listing, {
-      condition,
-      idempotencyKey: "repeatable_key",
-      fetchImpl: mockFetch,
-    });
-
-    expect(pact1.terms.pactId).toBe(pact2.terms.pactId);
-    expect(pact1.terms.nonce).toBe(pact2.terms.nonce);
-    expect(pact1.terms.conditionHash).toBe(pact2.terms.conditionHash);
-  });
-
-  it("executes M2 buy via pact scheme with signed authEntry", async () => {
-    let capturedPaymentHeader = "";
-    const mockFetch = vi.fn<typeof fetch>(async (_url, init) => {
-      capturedPaymentHeader = (init?.headers as Record<string, string>)["X-Payment"] ?? "";
-      return new Response("Escrow response", {
-        status: 200,
-        headers: {
-          "X-Pactwright-Delivery": "sha256=fedcba; sig=654321",
-        },
-      });
-    });
-
-    const listings = await pw.find({ query: "translate" });
-    const m2Listing = listings.find((l) => l.mode === "escrow")!;
-
-    const pact = await pw.buy(m2Listing, {
-      condition: { kind: "document.translation", lang: "fr" },
-      idempotencyKey: "idem_key_m2",
-      fetchImpl: mockFetch,
-    });
-
+  it("M2: pays the pact scheme", async () => {
+    const condition = { kind: "document.translation", lang: "fr" };
+    const s = seller({ scheme: "pact", amount: "25000000", condition });
+    const m2Listing = (await pw.find({ query: "translate" })).find((l) => l.mode === "escrow")!;
+    const pact = await pw.buy(m2Listing, { condition, idempotencyKey: "idem_key_m2", fetchImpl: s.fetchImpl });
     expect(pact.terms.mode).toBe("escrow");
-    expect(pact.terms.cap).toBe("2.50");
-    expect(capturedPaymentHeader).toBeTruthy();
-
-    const decoded = JSON.parse(Buffer.from(capturedPaymentHeader, "base64").toString("utf8")) as {
-      scheme: string;
-      pact_id: string;
-    };
-    expect(decoded.scheme).toBe("pact");
-    expect(decoded.pact_id).toBe(pact.terms.pactId);
     expect(payments.at(-1)).toMatchObject({ mode: "escrow", amount: "2.50", pactId: pact.terms.pactId });
+    expect(payments.at(-1)!.requirement.scheme).toBe("pact");
   });
 
-  it("refuses to buy without a payment provider instead of inventing a payment", async () => {
-    const pwNoPayment = createPactwright({
-      network: mockNetwork,
-      wallet: buyerWallet,
-      verifierUrl: "https://verifier.test",
-      adapters: { discovery, reputation, gate, verifier },
-    });
-    const listings = await pwNoPayment.find({ query: "translate" });
-    await expect(
-      pwNoPayment.buy(listings[0]!, { condition: {}, idempotencyKey: "no_payment", fetchImpl: vi.fn<typeof fetch>() }),
-    ).rejects.toThrow(/payment provider/);
+  it("the same idempotency key gives the same pact id and nonce", async () => {
+    const condition = { kind: "document.translation", lang: "es" };
+    const listing = (await pw.find({ query: "translate" }))[0]!;
+    const a = await pw.buy(listing, { condition, idempotencyKey: "repeatable_key", fetchImpl: seller({ scheme: "exact", amount: "10000000", condition }).fetchImpl });
+    const b = await pw.buy(listing, { condition, idempotencyKey: "repeatable_key", fetchImpl: seller({ scheme: "exact", amount: "10000000", condition }).fetchImpl });
+    expect(a.terms.pactId).toBe(b.terms.pactId);
+    expect(a.terms.nonce).toBe(b.terms.nonce);
+  });
+
+  it("refuses to pay for a different condition, payee or a higher price than agreed", async () => {
+    const condition = { kind: "document.translation", lang: "es" };
+    const listing = (await pw.find({ query: "translate" }))[0]!;
+    const cases = [
+      seller({ scheme: "exact", amount: "10000000", condition: { ...condition, lang: "de" } }),
+      seller({ scheme: "exact", amount: "10000000", condition, payTo: VALID_ADDRESS_1 }),
+      seller({ scheme: "exact", amount: "10000001", condition }),
+      seller({ scheme: "pact", amount: "10000000", condition }),
+    ];
+    for (const s of cases) {
+      await expect(pw.buy(listing, { condition, idempotencyKey: "guarded", fetchImpl: s.fetchImpl })).rejects.toThrow();
+      expect(s.seen).toHaveLength(1); // asked once, never paid
+    }
+  });
+
+  it("expects a 402 before paying", async () => {
+    const listing = (await pw.find({ query: "translate" }))[0]!;
+    const free = vi.fn<typeof fetch>(async () => new Response("free", { status: 200 }));
+    await expect(pw.buy(listing, { condition: {}, idempotencyKey: "free", fetchImpl: free })).rejects.toThrow(/402/);
   });
 
   it("throws error when gate rejects budget", async () => {
@@ -225,19 +225,16 @@ describe("Pactwright Agent Runtime", () => {
     ).rejects.toThrow("Budget approval rejected by gate");
   });
 
-  it("throws error when seller refuses terminal pact (409)", async () => {
-    const mockFetch = vi.fn<typeof fetch>(async () =>
-      new Response(JSON.stringify({ error: "Pact is terminal" }), { status: 409 }),
-    );
-
-    const listings = await pw.find({ query: "translate" });
-    await expect(
-      pw.buy(listings[0]!, {
-        condition: {},
-        idempotencyKey: "terminal_test",
-        fetchImpl: mockFetch,
-      }),
-    ).rejects.toThrow("Pact is terminal");
+  it("throws when the seller refuses an already-served pact (409)", async () => {
+    const condition = { kind: "document.translation", lang: "es" };
+    const s = seller({
+      scheme: "exact",
+      amount: "10000000",
+      condition,
+      afterPay: new Response(JSON.stringify({ error: "Pact is terminal" }), { status: 409 }),
+    });
+    const listing = (await pw.find({ query: "translate" }))[0]!;
+    await expect(pw.buy(listing, { condition, idempotencyKey: "terminal_test", fetchImpl: s.fetchImpl })).rejects.toThrow("Pact is terminal");
   });
 
   describe("awaitPact()", () => {

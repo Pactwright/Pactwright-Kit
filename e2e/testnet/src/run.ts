@@ -43,13 +43,18 @@ import { Client as PactClient, Silence, Verdict } from "@pactwright/contracts-cl
 import {
   createRefundSigner,
   handleAutoSettle,
+  pact,
   handleDisputeRefund,
   handleM0Refund,
   invokeContract,
   scv,
   type ChainOptions,
 } from "@pactwright/seller";
-import { challengeNonDelivery, decideDocumentTranslation, signVerdict } from "@pactwright/verifier";
+import { challengeNonDelivery, checkDeliveryReceipt, decideDocumentTranslation, signVerdict, submit as submitVerdict } from "@pactwright/verifier";
+import { createPactwright, walletSigner } from "@pactwright/agent";
+import { DiscoveryBazaar, GateManual, ReputationIdentity, VerifierWitness, WalletKeypair } from "@pactwright/adapters";
+import express from "express";
+import type { AddressInfo } from "node:net";
 
 // ---- configuration ----------------------------------------------------------
 const RPC_URL = process.env.STELLAR_RPC_URL ?? "https://soroban-testnet.stellar.org";
@@ -433,6 +438,9 @@ export async function main(): Promise<void> {
     log(`Dispute refund: ${results.at(-1)!.outcome}`);
   }
 
+  // Over x402, end to end: Kit agent → Kit seller middleware → facilitator → chain.
+  if (process.env.E2E_FACILITATOR_URL) await x402Scenarios(buyer, seller, process.env.E2E_FACILITATOR_URL);
+
   // ---- report ----
   const report = {
     network: "testnet",
@@ -454,6 +462,113 @@ export async function main(): Promise<void> {
   log(`report: ${file}`);
 }
 
+/**
+ * The real x402 flow. The seller runs the Kit's `pact()` middleware in-process; the agent buys
+ * with its built-in x402 payment (it signs only auth entries); the facilitator verifies, pays the
+ * fee and settles. M2 then gets its verdict and the seller's settle through `/pact/submit`.
+ */
+async function x402Scenarios(buyer: Keypair, seller: Keypair, facilitatorUrl: string): Promise<void> {
+  const deliverySeed = randomBytes(32).toString("hex");
+  const sellerConfig = {
+    network: "stellar:testnet",
+    sellerAddress: seller.publicKey(),
+    deliverySecret: deliverySeed,
+    verifierPublicKey: verifier.rawPublicKey().toString("hex"),
+    verifierUrl: "https://verifier.pactwright.invalid",
+    usdcSac: USDC_SAC_ID,
+    pactContractId: PACT_CONTRACT_ID,
+    facilitatorUrl,
+  };
+  const deliveryKey = Keypair.fromRawEd25519Seed(Buffer.from(deliverySeed, "hex")).rawPublicKey().toString("hex");
+  const route = (mode: "exact-refund" | "escrow") =>
+    pact({ mode, price: "1", asset: "USDC", condition: () => CONDITION, refundWindowLedgers: REFUND_WINDOW_LEDGERS }, sellerConfig);
+  const app = express();
+  app.get("/m0", route("exact-refund"), (_req, res) => void res.json({ translated: "complete translation", pages: 4 }));
+  app.get("/m2", route("escrow"), (_req, res) => void res.json({ translated: "complete translation", pages: 4 }));
+  const server = app.listen(0);
+  await new Promise((r) => server.once("listening", r));
+  const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+
+  const listing = (mode: "exact-refund" | "escrow", path: string) => ({
+    resourceUrl: `${base}${path}`,
+    seller: seller.publicKey(),
+    mode,
+    price: "1",
+    verifier: verifier.rawPublicKey().toString("hex"),
+    refundWindowLedgers: REFUND_WINDOW_LEDGERS,
+    score: 1,
+  });
+  const agent = createPactwright({
+    network: {
+      network: "testnet",
+      passphrase: PASSPHRASE,
+      rpcUrl: RPC_URL,
+      usdcSac: USDC_SAC_ID,
+      receiptAnchor: "CAEO5GBC3ULRC5RYBSCSOXLNXHU2HZAHNW5HY5LZM3DIPFMX357ILNJ2",
+      facilitatorUrl,
+    },
+    wallet: new WalletKeypair(buyer),
+    verifierUrl: "https://verifier.pactwright.invalid",
+    adapters: {
+      discovery: new DiscoveryBazaar({ listings: [] }),
+      reputation: new ReputationIdentity(),
+      gate: new GateManual({ maxAutoApproveAmount: "5" }),
+      verifier: new VerifierWitness(),
+    },
+  });
+  const submitOptions = { facilitatorUrl, network: "stellar:testnet" as const, rpcUrl: RPC_URL };
+
+  try {
+    for (const [name, mode, path] of [
+      ["x402 M0 (exact)", "exact-refund", "/m0"],
+      ["x402 M2 (pact)", "escrow", "/m2"],
+    ] as const) {
+      const bought = await agent.buy(listing(mode, path), {
+        condition: CONDITION,
+        idempotencyKey: `e2e-${runId}-${name}`,
+        request: { method: "GET" },
+      });
+      if (!bought.paymentTx) throw new Error(`${name}: no settled payment transaction`);
+      // The seller's delivery receipt verifies against its declared key, as the verifier checks it.
+      const bodySha = createHash("sha256").update(bought.body).digest("hex");
+      const receiptProblem = checkDeliveryReceipt(
+        { ...bought.terms, deliveryKey },
+        { bodySha256: bodySha, signature: bought.deliveryReceipt!.split("sig=")[1]!.trim() },
+        [{ type: "document", uri: "e2e://body", sha256: bodySha, mimeType: "application/json", uploader: buyer.publicKey(), createdAt: new Date().toISOString() }],
+      );
+      if (receiptProblem) throw new Error(`${name}: delivery receipt rejected: ${receiptProblem}`);
+      const paid: Step = { label: mode === "escrow" ? "x402 pact.open (facilitator-paid fee)" : "x402 exact payment (facilitator-paid fee)", tx: bought.paymentTx, ledger: await ledgerOf(bought.paymentTx) };
+
+      if (mode === "exact-refund") {
+        push(name, "M0", "paid over x402, receipt verified", bought.terms, toStroops("1"), 0n, "paid", null, [paid]);
+        continue;
+      }
+
+      // M2: the verifier's ALLOW and the seller's settle, both fee-sponsored by the facilitator.
+      const t = { ...bought.terms, mode: "escrow" as const };
+      const { decision, signed } = await verdictFor(t, READINGS.complete!, "delivery", paid.ledger);
+      const a = signed.attestation!;
+      const verdictTx = await submitVerdict(bought.terms.pactId, "record_verdict", {
+        ...submitOptions,
+        pactContractId: PACT_CONTRACT_ID,
+        attestation: a.attestation,
+        signature: a.signature,
+      });
+      const settled = await handleAutoSettle(
+        { pactId: bought.terms.pactId, verdict: "allow", allowedAmount: fromStroops(decision.amount) },
+        { pactContractId: PACT_CONTRACT_ID, facilitator: { ...submitOptions, signer: walletSigner(new WalletKeypair(seller)) } },
+      );
+      push(name, "M2", "ALLOW 1, settled; every fee paid by the facilitator", bought.terms, decision.amount, toStroops("1") - decision.amount, "settled", signed.envelopeSha256, [
+        paid,
+        { label: "record_verdict via /pact/submit", tx: verdictTx, ledger: await ledgerOf(verdictTx) },
+        { label: "settle via /pact/submit (seller-signed)", tx: settled.txHash!, ledger: await ledgerOf(settled.txHash!) },
+      ]);
+    }
+  } finally {
+    server.close();
+  }
+}
+
 function push(
   scenario: string,
   mode: "M0" | "M2",
@@ -461,7 +576,7 @@ function push(
   t: PactTerms,
   toSeller: bigint,
   toBuyer: bigint,
-  transition: "settled" | "released",
+  transition: "paid" | "settled" | "released",
   envelopeHash: string | null,
   steps: Step[],
 ): void {
