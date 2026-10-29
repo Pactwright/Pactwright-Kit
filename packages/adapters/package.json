@@ -15,7 +15,9 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@pactwright/core": "workspace:*"
+    "@pactwright/core": "workspace:*",
+    "@stellar/stellar-base": "^15.0.0",
+    "@witness/core": "workspace:*"
   },
   "files": [
     "dist"

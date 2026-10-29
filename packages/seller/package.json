@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@accensa/sdk": "workspace:*",
-    "@pactwright/core": "workspace:*"
+    "@pactwright/core": "workspace:*",
+    "@stellar/stellar-base": "^15.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

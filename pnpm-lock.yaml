@@ -56,6 +56,12 @@ importers:
       '@pactwright/core':
         specifier: workspace:*
         version: link:../core
+      '@stellar/stellar-base':
+        specifier: ^15.0.0
+        version: 15.0.0
+      '@witness/core':
+        specifier: workspace:*
+        version: link:../../vendor/witness-core
 
   packages/agent:
     dependencies:
@@ -113,6 +119,9 @@ importers:
       '@pactwright/core':
         specifier: workspace:*
         version: link:../core
+      '@stellar/stellar-base':
+        specifier: ^15.0.0
+        version: 15.0.0
     devDependencies:
       '@types/express':
         specifier: ^5.0.0

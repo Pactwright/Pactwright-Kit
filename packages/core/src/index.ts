@@ -4,3 +4,4 @@ export * from "./hashing.ts";
 export * from "./merkle.ts";
 export * from "./network.ts";
 export * from "./schemas.ts";
+export { Keypair } from "@stellar/stellar-base";
