@@ -1,5 +1,6 @@
 /** Adapter interfaces. ARCHITECTURE.md §8.6. */
 import type { Mode, PactTerms, Verdict } from "@pactwright/core";
+export type { Mode, PactTerms, Verdict };
 
 export interface SearchQuery {
   query: string;

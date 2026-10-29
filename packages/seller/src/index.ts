@@ -1,6 +1,24 @@
-export { pact } from "./express.ts";
+export { pact, isPactTerminal, markPactTerminal, clearTerminalPacts } from "./express.ts";
 export { pactHono } from "./hono.ts";
-export type { PactRouteOptions } from "./pact.ts";
+export type { PactRouteOptions, SellerConfig } from "./pact.ts";
+export { resolveSellerConfig } from "./pact.ts";
 export { buildPaymentRequired, type PaymentRequired } from "./payment-required.ts";
-export { DELIVERY_HEADER, signDelivery } from "./delivery.ts";
-export { runStartupChecks } from "./startup-checks.ts";
+export { DELIVERY_HEADER, signDelivery, parseDeliveryHeader } from "./delivery.ts";
+export { runStartupChecks, type StartupCheckOptions } from "./startup-checks.ts";
+export {
+  createSettleHook,
+  handleAutoSettle,
+  onSettled,
+  type VerdictNotification,
+  type AutoSettleOptions,
+  type AutoSettleResult,
+} from "./hooks/settle.ts";
+export {
+  handleM0Refund,
+  onVerdict,
+  calculateRefundAmount,
+  clearRefundedRefs,
+  type M0VerdictNotification,
+  type RefundOptions,
+  type RefundResult,
+} from "./hooks/refund.ts";
