@@ -6,8 +6,8 @@
  * silence policy rather than guessing.
  */
 import { createHash } from "node:crypto";
-import { toStroops, type PactTerms } from "@pactwright/core";
-import { Keypair } from "@witness/core";
+import { deliveryMessage, toStroops, type PactTerms } from "@pactwright/core";
+import { Keypair, StrKey } from "@stellar/stellar-base";
 import type { EvidenceItem, VerdictEnvelope } from "./types.ts";
 import { getRuleSet } from "./rules/index.ts";
 import { llmAdapter } from "./models/llm.ts";
@@ -62,7 +62,9 @@ export async function runPipeline(
   let verifierKey = options?.verifierKey;
   if (!verifierKey) {
     const secret = process.env.VERIFIER_SECRET_KEY;
-    verifierKey = secret ? Keypair.fromSecret(secret) : Keypair.random();
+    // Never sign with a throwaway key: its verdicts would be rejected on-chain or, worse, trusted.
+    if (!secret) throw new Error("VERIFIER_SECRET_KEY is not set");
+    verifierKey = Keypair.fromSecret(secret);
   }
 
   const model = options?.modelAdapter ?? llmAdapter;
@@ -183,6 +185,36 @@ export async function runPipeline(
       attestation: signRes.attestation,
       amount: 0n,
     };
+  }
+
+  // The receipt must be signed by the seller's declared delivery key (FR-V2, ARCHITECTURE §4.3)
+  // and cover a body the buyer actually submitted as evidence.
+  const receiptProblem = checkDeliveryReceipt(terms, parsedReceipt, evidence);
+  if (receiptProblem) {
+    const signRes = await signVerdict({
+      terms,
+      decision: {
+        verdict: "DENY",
+        amount: 0n,
+        criteria: [
+          {
+            id: "delivery_receipt",
+            verifier: verifierKey.publicKey(),
+            result: "FAIL",
+            code: "MERCHANT_MISMATCH",
+            reason: receiptProblem,
+            mandatory: true,
+          },
+        ],
+        reasons: ["MERCHANT_MISMATCH"],
+        policyVersion: "pactwright/delivery@1",
+      },
+      evidence,
+      verifierKey,
+      milestone,
+      ledgerSeq: options?.ledgerSeq,
+    });
+    return { envelope: signRes.envelope, envelopeRef: signRes.envelopeRef, attestation: signRes.attestation, amount: 0n };
   }
 
   // V-09: Below verify.minAmount, skip model verification; return receipt-only outcome.
@@ -347,4 +379,22 @@ export async function runPipeline(
     attestation: signRes.attestation,
     amount: decision.amount,
   };
+}
+
+/** Returns why a parsed delivery receipt is unacceptable, or null when it is valid. */
+export function checkDeliveryReceipt(
+  terms: PactTerms,
+  receipt: { bodySha256: string; signature: string },
+  evidence: EvidenceItem[],
+): string | null {
+  if (!terms.deliveryKey) return "pact terms carry no seller delivery key";
+  const signature = Buffer.from(receipt.signature, "base64");
+  if (signature.length !== 64) return "delivery receipt signature is not 64 bytes";
+  const sellerKey = Keypair.fromPublicKey(StrKey.encodeEd25519PublicKey(Buffer.from(terms.deliveryKey, "hex")));
+  const digest = Buffer.from(deliveryMessage(terms.pactId, receipt.bodySha256));
+  if (!sellerKey.verify(digest, signature)) return "delivery receipt is not signed by the seller's delivery key";
+  if (!evidence.some((e) => e.sha256.toLowerCase() === receipt.bodySha256)) {
+    return "no evidence item matches the body hash in the delivery receipt";
+  }
+  return null;
 }

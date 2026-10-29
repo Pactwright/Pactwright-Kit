@@ -6,13 +6,19 @@ import {
   Networks,
   Operation,
   TransactionBuilder,
-} from "@stellar/stellar-base";
+  rpc,
+  type Transaction,
+} from "@stellar/stellar-sdk";
 
 export interface CreateAgentOptions {
   networkPassphrase?: string;
   usdcIssuer?: string;
+  /** Loads the source account's sequence and submits the transaction, unless overridden below. */
+  rpcUrl?: string;
   agentKeypair?: Keypair;
+  /** Submits the signed transaction and returns its hash. Default: through `rpcUrl`. */
   submitTx?: (txXdr: string) => Promise<string>;
+  /** The source account's current sequence. Default: read through `rpcUrl`. */
   sourceAccountSequence?: string;
 }
 
@@ -25,11 +31,31 @@ export interface CreateAgentResult {
 export interface TopUpOptions {
   networkPassphrase?: string;
   usdcIssuer?: string;
+  /** Loads the source account's sequence and submits the transaction, unless overridden below. */
+  rpcUrl?: string;
   submitTx?: (txXdr: string) => Promise<string>;
   sourceAccountSequence?: string;
 }
 
 const DEFAULT_USDC_ISSUER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
+
+async function sourceAccount(address: string, options: { rpcUrl?: string; sourceAccountSequence?: string }): Promise<Account> {
+  if (options.sourceAccountSequence) return new Account(address, options.sourceAccountSequence);
+  if (!options.rpcUrl) throw new Error("rpcUrl or sourceAccountSequence is required to build the transaction");
+  return new rpc.Server(options.rpcUrl).getAccount(address);
+}
+
+/** Submits through `submitTx`, or through `rpcUrl` and waits for success. Never returns an unsent hash. */
+async function submit(tx: Transaction, options: { rpcUrl?: string; submitTx?: (txXdr: string) => Promise<string> }): Promise<string> {
+  if (options.submitTx) return options.submitTx(tx.toXDR());
+  if (!options.rpcUrl) throw new Error("rpcUrl or submitTx is required: the transaction was not submitted");
+  const server = new rpc.Server(options.rpcUrl);
+  const sent = await server.sendTransaction(tx);
+  if (sent.status === "ERROR") throw new Error(`transaction rejected: ${sent.errorResult?.toXDR("base64") ?? "unknown"}`);
+  const final = await server.pollTransaction(sent.hash, { attempts: 30 });
+  if (final.status !== rpc.Api.GetTransactionStatus.SUCCESS) throw new Error(`transaction ${sent.hash} ${final.status}`);
+  return sent.hash;
+}
 
 export async function createAgentAccount(
   sponsorSecret: string,
@@ -41,10 +67,7 @@ export async function createAgentAccount(
   const usdcIssuer = options?.usdcIssuer ?? DEFAULT_USDC_ISSUER;
   const usdcAsset = new Asset("USDC", usdcIssuer);
 
-  const seq = options?.sourceAccountSequence ?? "1000";
-  const sourceAccount = new Account(sponsor.publicKey(), seq);
-
-  const tx = new TransactionBuilder(sourceAccount, {
+  const tx = new TransactionBuilder(await sourceAccount(sponsor.publicKey(), options ?? {}), {
     fee: "10000",
     networkPassphrase: passphrase,
   })
@@ -80,13 +103,7 @@ export async function createAgentAccount(
   tx.sign(sponsor);
   tx.sign(agent);
 
-  const txXdr = tx.toXDR();
-  let txHash: string;
-  if (options?.submitTx) {
-    txHash = await options.submitTx(txXdr);
-  } else {
-    txHash = tx.hash().toString("hex");
-  }
+  const txHash = await submit(tx, options ?? {});
 
   return {
     address: agent.publicKey(),
@@ -106,10 +123,7 @@ export async function topUp(
   const usdcIssuer = options?.usdcIssuer ?? DEFAULT_USDC_ISSUER;
   const usdcAsset = new Asset("USDC", usdcIssuer);
 
-  const seq = options?.sourceAccountSequence ?? "2000";
-  const sourceAccount = new Account(funder.publicKey(), seq);
-
-  const tx = new TransactionBuilder(sourceAccount, {
+  const tx = new TransactionBuilder(await sourceAccount(funder.publicKey(), options ?? {}), {
     fee: "10000",
     networkPassphrase: passphrase,
   })
@@ -125,10 +139,5 @@ export async function topUp(
 
   tx.sign(funder);
 
-  const txXdr = tx.toXDR();
-  if (options?.submitTx) {
-    return options.submitTx(txXdr);
-  }
-
-  return tx.hash().toString("hex");
+  return submit(tx, options ?? {});
 }

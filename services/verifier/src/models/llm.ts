@@ -19,7 +19,7 @@ export interface LLMAdapterOptions {
   apiKey?: string;
   baseUrl?: string;
   fetchImpl?: typeof fetch;
-  /** For testing / deterministic evaluation */
+  /** Fixed reading for tests and the eval set. Never used unless passed explicitly. */
   mockReading?: unknown;
 }
 
@@ -32,10 +32,11 @@ export class ProviderNeutralLLMAdapter implements ModelAdapter {
   private readonly mockReading?: unknown;
 
   constructor(options?: LLMAdapterOptions) {
-    this.name = options?.provider ?? process.env.VERIFIER_PROVIDER ?? "mock";
-    this.modelId = options?.modelId ?? process.env.VERIFIER_MODEL ?? "claude-3-5-sonnet-20241022";
+    this.name = options?.provider ?? process.env.VERIFIER_PROVIDER ?? "unconfigured";
+    // No default model: the model is pinned in configuration and recorded in every envelope.
+    this.modelId = options?.modelId ?? process.env.VERIFIER_MODEL ?? "";
     this.baseUrl = options?.baseUrl ?? process.env.LLM_BASE_URL;
-    this.apiKey = options?.apiKey ?? process.env.LLM_API_KEY;
+    this.apiKey = options?.apiKey ?? process.env.VERIFIER_LLM_API_KEY;
     this.fetchImpl = options?.fetchImpl ?? globalThis.fetch;
     this.mockReading = options?.mockReading;
   }
@@ -46,7 +47,9 @@ export class ProviderNeutralLLMAdapter implements ModelAdapter {
     evidence: { mimeType: string; data: Uint8Array }[],
     options?: { modelId?: string; mockOutput?: z.infer<S>; refusal?: boolean },
   ): Promise<ModelReading<z.infer<S>> | "refusal"> {
-    if (options?.refusal || instructions.includes("REFUSE_SERVICE")) {
+    // Refusal is only simulated when a caller asks for it explicitly; delivery text can never
+    // trigger it, or a seller could force "no verdict" and the silence policy.
+    if (options?.refusal) {
       return "refusal";
     }
 
@@ -72,32 +75,9 @@ export class ProviderNeutralLLMAdapter implements ModelAdapter {
       };
     }
 
-    // Default mock behavior for document translation when running tests without external LLM keys
-    if (this.name === "mock" || !this.apiKey) {
-      const textDecoder = new TextDecoder();
-      const combinedText = evidence.map((e) => textDecoder.decode(e.data)).join(" ");
-      const isSpanish = /hola|gracias|traducci[oó]n|por favor/i.test(combinedText);
-      const isFrench = /bonjour|merci|traduction|s'il vous plaît/i.test(combinedText);
-
-      let detectedLanguage = "en";
-      if (isSpanish) detectedLanguage = "es";
-      if (isFrench) detectedLanguage = "fr";
-
-      const defaultOutput = {
-        detectedLanguage,
-        pageCount: 1,
-        isTranslationOfSource: true,
-        untranslatedSegments: 0,
-        notes: "Mock LLM reading",
-      };
-
-      const rawText = JSON.stringify(defaultOutput);
-      const rawSha256 = createHash("sha256").update(rawText).digest("hex");
-      return {
-        output: schema.parse(defaultOutput),
-        modelId: this.modelId,
-        rawSha256,
-      };
+    // Fail closed: a verdict moves money, so never invent a reading when no model is configured.
+    if (!this.apiKey || !this.modelId) {
+      throw new Error("verifier model is not configured: set VERIFIER_PROVIDER, VERIFIER_MODEL and VERIFIER_LLM_API_KEY");
     }
 
     // Provider HTTP call (no sampling parameters)

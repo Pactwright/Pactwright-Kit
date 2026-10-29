@@ -27,7 +27,7 @@ export async function agentCreate(args: string[], options?: AgentCreateCommandOp
   }
 
   try {
-    const result = await createAgentAccount(sponsorSecret, options);
+    const result = await createAgentAccount(sponsorSecret, { rpcUrl: process.env.STELLAR_RPC_URL, ...options });
     log(`✓ Agent account created`);
     log(`  Address: ${result.address}`);
     log(`  Tx:      ${result.tx}`);

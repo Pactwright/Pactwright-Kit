@@ -16,6 +16,7 @@ import {
   DELIVERY_HEADER,
   type PactRouteOptions,
   type SellerConfig,
+  type RefundCall,
 } from "../src/index.ts";
 
 const SELLER_SEED = "05".repeat(32);
@@ -267,7 +268,7 @@ describe("Seller Hooks: Settle and Refund", () => {
         verdict: "allow",
         allowedAmount: "1.00",
       },
-      { fetchImpl },
+      { fetchImpl, facilitatorUrl: "https://facilitator.example" },
     );
 
     expect(result.settled).toBe(true);
@@ -282,7 +283,7 @@ describe("Seller Hooks: Settle and Refund", () => {
         pactId: "01".repeat(32),
         verdict: "deny",
       },
-      { fetchImpl },
+      { fetchImpl, facilitatorUrl: "https://facilitator.example" },
     );
     expect(result.settled).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -295,17 +296,47 @@ describe("Seller Hooks: Settle and Refund", () => {
     expect(calculateRefundAmount("0.25", "0.30")).toBe("0");
   });
 
+  const vault = "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA";
+  const calls: RefundCall[] = [];
+  const submit = async (call: RefundCall) => {
+    calls.push(call);
+    return { txHash: "ab".repeat(32), ledger: 1234 };
+  };
+  const refundOptions = { refundVaultId: vault, submit };
+
+  it("does not report a refund when no vault or chain is configured", async () => {
+    const result = await handleM0Refund({
+      pactId: "04".repeat(32),
+      buyer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      price: "1.00",
+      verdict: "deny",
+      paidAtLedger: 10,
+    });
+    expect(result.refunded).toBe(false);
+    expect(result.txHash).toBeUndefined();
+    expect(result.error).toMatch(/^not_submitted/);
+  });
+
   it("executes M0 refund on DENY through RefundVault", async () => {
     const result = await handleM0Refund({
       pactId: "01".repeat(32),
       buyer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
       price: "1.00",
       verdict: "deny",
-    });
+      paidAtLedger: 10,
+    }, refundOptions);
 
     expect(result.refunded).toBe(true);
     expect(result.refundAmount).toBe("1");
     expect(result.paymentRef).toBe("01".repeat(32));
+    expect(result.txHash).toBe("ab".repeat(32));
+    expect(calls.at(-1)).toEqual({
+      refundVaultId: vault,
+      paymentRef: "01".repeat(32),
+      recipient: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      amountStroops: 10_000_000n,
+      paidAtLedger: 10,
+    });
   });
 
   it("executes M0 partial refund on partial delivery", async () => {
@@ -315,7 +346,8 @@ describe("Seller Hooks: Settle and Refund", () => {
       price: "1.00",
       verdict: "allow",
       allowedAmount: "0.40",
-    });
+      paidAtLedger: 10,
+    }, refundOptions);
 
     expect(result.refunded).toBe(true);
     expect(result.refundAmount).toBe("0.6");
@@ -327,12 +359,13 @@ describe("Seller Hooks: Settle and Refund", () => {
       buyer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
       price: "1.00",
       verdict: "deny" as const,
+      paidAtLedger: 10,
     };
 
-    const first = await handleM0Refund(notification);
+    const first = await handleM0Refund(notification, refundOptions);
     expect(first.refunded).toBe(true);
 
-    const second = await handleM0Refund(notification);
+    const second = await handleM0Refund(notification, refundOptions);
     expect(second.refunded).toBe(false);
     expect(second.error).toBe("AlreadyRefunded");
   });

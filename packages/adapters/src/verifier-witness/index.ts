@@ -44,7 +44,8 @@ export class VerifierWitness implements Verifier {
     }
 
     const data = (await res.json()) as VerdictResponse;
-    const envelopeRef = data.envelopeRef ?? data.envelope?.hash ?? data.envelope?.proofHash ?? "envelope_ref_placeholder";
+    const envelopeRef = data.envelopeRef ?? data.envelope?.hash ?? data.envelope?.proofHash;
+    if (!envelopeRef) throw new Error("Verifier returned a verdict without an envelope reference");
     const verdict = data.verdict.toUpperCase() as "ALLOW" | "DENY";
 
     return {

@@ -1,6 +1,9 @@
 /**
- * Facilitator pact-scheme validation and submission logic (X-02, X-03, X-04, X-05).
- * Validates pact.open in /verify, sponsors fees in /settle, and enforces the allow-list in /pact/submit.
+ * Reference validation rules for the facilitator's `pact` scheme (ARCHITECTURE §6.4): the
+ * `/verify` checks on `pact.open`, one-time `pact_id` use, and the `/pact/submit` allow-list.
+ *
+ * It submits nothing. Settlement and fee sponsorship belong in the facilitator itself
+ * (accensa/x402-facilitator-stellar, ROADMAP X-01…X-04), which can port these rules.
  */
 import type { Keypair } from "@stellar/stellar-base";
 import { conditionHash } from "@pactwright/core";
@@ -36,10 +39,9 @@ export interface FacilitatorConfig {
 }
 
 export interface SettleSubmitResult {
-  settled: boolean;
+  /** The request passed validation and its `pact_id` is now reserved. Nothing was submitted. */
+  accepted: boolean;
   pactId: string;
-  txHash: string;
-  sponsoredFeeStroops: number;
 }
 
 export interface PactSubmitRequest {
@@ -112,9 +114,7 @@ export class FacilitatorSchemeHandler {
     return { valid: true };
   }
 
-  /**
-   * Submits pact.open with fee sponsorship in /settle (ROADMAP X-03).
-   */
+  /** Validates a `pact.open` payment and reserves its `pact_id`. Submits nothing (see X-03). */
   async submitSettle(req: PactVerifyRequest): Promise<SettleSubmitResult> {
     const check = this.validatePactVerify(req);
     if (!check.valid) {
@@ -123,18 +123,13 @@ export class FacilitatorSchemeHandler {
 
     this.usedPactIds.add(req.pactId.toLowerCase());
 
-    return {
-      settled: true,
-      pactId: req.pactId,
-      txHash: `tx_pact_open_${req.pactId.slice(0, 8)}`,
-      sponsoredFeeStroops: 100,
-    };
+    return { accepted: true, pactId: req.pactId };
   }
 
   /**
    * Enforces allow-listed functions in POST /pact/submit (ROADMAP X-04).
    */
-  async submitPactAction(req: PactSubmitRequest): Promise<{ ok: boolean; txHash: string }> {
+  async submitPactAction(req: PactSubmitRequest): Promise<{ ok: boolean }> {
     const isAllowed = (ALLOWED_PACT_SUBMIT_ACTIONS as readonly string[]).includes(req.action);
     if (!isAllowed) {
       throw new Error(`Action '${req.action}' is not in the /pact/submit allow-list`);
@@ -144,9 +139,6 @@ export class FacilitatorSchemeHandler {
       throw new Error("Invalid or missing pact_id");
     }
 
-    return {
-      ok: true,
-      txHash: `tx_${req.action}_${req.pact_id.slice(0, 8)}`,
-    };
+    return { ok: true };
   }
 }

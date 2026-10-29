@@ -7,6 +7,11 @@ describe("Dispute Refunds (P7-06)", () => {
   const pactId = "66".repeat(32);
   const buyer = Keypair.random().publicKey();
 
+  const refundOptions = {
+    refundVaultId: "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+    submit: async () => ({ txHash: "cd".repeat(32), ledger: 200 }),
+  };
+
   beforeEach(() => {
     clearRefundedRefs();
   });
@@ -19,9 +24,10 @@ describe("Dispute Refunds (P7-06)", () => {
       verdict: "deny",
       envelopeHash: "77".repeat(32),
       ledger: 105,
-    });
+    }, refundOptions);
 
     expect(res.refunded).toBe(true);
+    expect(res.txHash).toBe("cd".repeat(32));
     expect(parseFloat(res.refundAmount)).toBe(1.0);
     expect(res.receiptLeaf).toMatch(/^[0-9a-fA-F]{64}$/);
   });
@@ -35,7 +41,7 @@ describe("Dispute Refunds (P7-06)", () => {
       allowedAmount: "0.40",
       envelopeHash: "88".repeat(32),
       ledger: 110,
-    });
+    }, refundOptions);
 
     expect(res.refunded).toBe(true);
     expect(parseFloat(res.refundAmount)).toBe(0.6);

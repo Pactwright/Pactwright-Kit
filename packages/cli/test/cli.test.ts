@@ -103,6 +103,7 @@ describe("Pactwright CLI Commands", () => {
 
       await agentCreate(["--sponsor-secret", sponsorSecret], {
         sourceAccountSequence: "100",
+        submitTx: async () => "aa".repeat(32),
         log: (msg) => logs.push(msg),
         error: () => {},
       });
@@ -131,6 +132,7 @@ describe("Pactwright CLI Commands", () => {
 
       await agentTopup([agentAddress, "25.00", "--funder-secret", funderSecret], {
         sourceAccountSequence: "200",
+        submitTx: async () => "bb".repeat(32),
         log: (msg) => logs.push(msg),
         error: () => {},
       });

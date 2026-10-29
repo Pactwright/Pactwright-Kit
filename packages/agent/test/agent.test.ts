@@ -16,6 +16,8 @@ import {
   deriveNonce,
   type Pact,
   type PactwrightConfig,
+  type PaymentProvider,
+  type PaymentRequest,
 } from "../src/index.ts";
 
 const VALID_ADDRESS_1 = "GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJVTOO";
@@ -67,10 +69,21 @@ describe("Pactwright Agent Runtime", () => {
     ),
   });
 
+  // Test payment provider: records what it was asked to pay. Real providers sign an x402 payment.
+  const payments: PaymentRequest[] = [];
+  const payment: PaymentProvider = {
+    async pay(request) {
+      payments.push(request);
+      const scheme = request.mode === "escrow" ? "pact" : "exact";
+      return { header: Buffer.from(JSON.stringify({ scheme, pact_id: request.pactId })).toString("base64") };
+    },
+  };
+
   const pw = createPactwright({
     network: mockNetwork,
     wallet: buyerWallet,
     verifierUrl: "https://verifier.test",
+    payment,
     adapters: {
       discovery,
       reputation,
@@ -174,12 +187,24 @@ describe("Pactwright Agent Runtime", () => {
 
     const decoded = JSON.parse(Buffer.from(capturedPaymentHeader, "base64").toString("utf8")) as {
       scheme: string;
-      authEntry: string;
       pact_id: string;
     };
     expect(decoded.scheme).toBe("pact");
-    expect(decoded.authEntry).toBeTruthy();
     expect(decoded.pact_id).toBe(pact.terms.pactId);
+    expect(payments.at(-1)).toMatchObject({ mode: "escrow", amount: "2.50", pactId: pact.terms.pactId });
+  });
+
+  it("refuses to buy without a payment provider instead of inventing a payment", async () => {
+    const pwNoPayment = createPactwright({
+      network: mockNetwork,
+      wallet: buyerWallet,
+      verifierUrl: "https://verifier.test",
+      adapters: { discovery, reputation, gate, verifier },
+    });
+    const listings = await pwNoPayment.find({ query: "translate" });
+    await expect(
+      pwNoPayment.buy(listings[0]!, { condition: {}, idempotencyKey: "no_payment", fetchImpl: vi.fn<typeof fetch>() }),
+    ).rejects.toThrow(/payment provider/);
   });
 
   it("throws error when gate rejects budget", async () => {
@@ -251,7 +276,7 @@ describe("Pactwright Agent Runtime", () => {
 
       const denyVerifier = new VerifierWitness({
         fetchImpl: vi.fn(async () =>
-          new Response(JSON.stringify({ verdict: "DENY", amount: "0" }), { status: 200 }),
+          new Response(JSON.stringify({ verdict: "DENY", amount: "0", envelopeRef: "verdict-v1 sha256=" + "ab".repeat(32) }), { status: 200 }),
         ),
       });
       const pwDeny = createPactwright({
@@ -276,7 +301,7 @@ describe("Pactwright Agent Runtime", () => {
 
       const denyVerifier = new VerifierWitness({
         fetchImpl: vi.fn(async () =>
-          new Response(JSON.stringify({ verdict: "DENY", amount: "0" }), { status: 200 }),
+          new Response(JSON.stringify({ verdict: "DENY", amount: "0", envelopeRef: "verdict-v1 sha256=" + "ab".repeat(32) }), { status: 200 }),
         ),
       });
       const pwDeny = createPactwright({
@@ -353,9 +378,15 @@ describe("Pactwright Agent Runtime", () => {
     const funder = Keypair.random();
 
     it("creates account with sponsored reserves and 0 XLM balance", async () => {
+      const submitted: string[] = [];
       const res = await createAgentAccount(sponsor.secret(), {
         sourceAccountSequence: "100",
+        submitTx: async (xdr) => {
+          submitted.push(xdr);
+          return "aa".repeat(32);
+        },
       });
+      expect(submitted).toHaveLength(1);
 
       expect(res.address).toMatch(/^G[A-Z2-7]{55}$/);
       expect(res.tx).toMatch(/^[0-9a-f]{64}$/);
@@ -366,9 +397,14 @@ describe("Pactwright Agent Runtime", () => {
       const agentAddress = Keypair.random().publicKey();
       const txHash = await topUp(agentAddress, "50.00", funder.secret(), {
         sourceAccountSequence: "200",
+        submitTx: async () => "bb".repeat(32),
       });
 
-      expect(txHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(txHash).toBe("bb".repeat(32));
+    });
+
+    it("refuses to return a hash for a transaction it did not submit", async () => {
+      await expect(createAgentAccount(sponsor.secret(), { sourceAccountSequence: "100" })).rejects.toThrow(/not submitted/);
     });
   });
 });

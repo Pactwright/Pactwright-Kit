@@ -37,7 +37,7 @@ export async function agentTopup(args: string[], options?: AgentTopupCommandOpti
   }
 
   try {
-    const tx = await topUp(agent, amount, funderSecret, options);
+    const tx = await topUp(agent, amount, funderSecret, { rpcUrl: process.env.STELLAR_RPC_URL, ...options });
     log(`✓ Agent budget topped up`);
     log(`  Agent:  ${agent}`);
     log(`  Amount: ${amount} USDC`);

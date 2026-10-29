@@ -5,6 +5,7 @@
     "packages/*/test",
     "services/*/src",
     "services/*/eval",
-    "examples/*/src"
+    "examples/*/src",
+    "e2e/*/src"
   ]
 }

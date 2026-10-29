@@ -24,8 +24,10 @@ describe("examples/agent-node", () => {
       );
     }) as unknown as typeof fetch;
 
+    const payment = { pay: async () => ({ header: Buffer.from('{"scheme":"exact"}').toString("base64") }) };
     const pact = await runAgentBuyer({
       agentKey,
+      payment,
       sellerUrl: "http://localhost:4000/translate?to=es",
       targetLang: "es",
       fetchImpl: mockFetch,

@@ -58,10 +58,11 @@ export class WalletPollar implements Wallet {
       }
 
       const data = (await res.json()) as { signed_entry?: string };
-      return data.signed_entry ?? entry;
-    } catch {
-      // In mock/test environment without live Pollar API
-      return entry;
+      if (!data.signed_entry) throw new Error("Pollar returned no signed entry");
+      return data.signed_entry;
+    } catch (err) {
+      // Never hand back an unsigned entry as if it were signed.
+      throw new Error(`Pollar could not sign the auth entry: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }

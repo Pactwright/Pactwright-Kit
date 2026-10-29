@@ -1,7 +1,7 @@
 /** createPactwright(): the buyer-side entry point. ARCHITECTURE §6.1. */
 import type { Certificate, NetworkConfig, PactState } from "@pactwright/core";
 import type { Discovery, Gate, RankedListing, Reputation, SearchQuery, Verifier, Wallet } from "@pactwright/adapters";
-import { buy, type BuyOptions, type Pact } from "./buy.ts";
+import { buy, type BuyOptions, type Pact, type PaymentProvider } from "./buy.ts";
 import { awaitPact, type AwaitOptions } from "./await.ts";
 import { getCertificate } from "./certificate.ts";
 import { find } from "./find.ts";
@@ -11,6 +11,8 @@ export interface PactwrightConfig {
   wallet: Wallet;
   verifierUrl: string;
   facilitatorUrl?: string;
+  /** Pays for purchases. Without one, `buy` refuses to run. */
+  payment?: PaymentProvider;
   fetchImpl?: typeof fetch;
   adapters: {
     discovery: Discovery;
