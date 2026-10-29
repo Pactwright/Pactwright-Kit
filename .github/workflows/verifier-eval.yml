@@ -30,6 +30,7 @@ jobs:
   real-model:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: verifier-eval
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +49,8 @@ jobs:
           VERIFIER_EFFORT: ${{ vars.VERIFIER_EFFORT }}
           LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
           VERIFIER_LLM_API_KEY: ${{ secrets.VERIFIER_LLM_API_KEY }}
+          VERIFIER_MODEL_TIMEOUT_MS: ${{ vars.VERIFIER_MODEL_TIMEOUT_MS }}
+          EVAL_CASE_DELAY_MS: ${{ vars.EVAL_CASE_DELAY_MS }}
         run: node services/verifier/eval/real/run.ts --out real-model-report.json
       - if: always()
         uses: actions/upload-artifact@v4

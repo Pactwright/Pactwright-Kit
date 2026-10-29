@@ -142,7 +142,15 @@ export async function runRealModelEval(
   const model = recording(adapter);
   const results: CaseResult[] = [];
   // Sequential: provider rate limits matter more than wall time for a manual run.
-  for (const c of cases) results.push(await runCase(c, model));
+  for (const [i, c] of cases.entries()) {
+    const r = await runCase(c, model);
+    results.push(r);
+    // Progress as it runs, so a slow or failing provider shows up immediately.
+    console.error(`[${i + 1}/${cases.length}] ${r.pass ? "PASS" : "FAIL"} ${c.id}${r.error ? ` (${r.error})` : ""}`);
+    // Pace requests to stay inside the provider's per-minute limit (EVAL_CASE_DELAY_MS).
+    const delay = Number(process.env.EVAL_CASE_DELAY_MS ?? 0);
+    if (delay > 0 && i < cases.length - 1) await new Promise((res) => setTimeout(res, delay));
+  }
 
   const kinds = [...new Set(results.map((r) => r.kind))];
   const perKind = kinds.map((kind) => {

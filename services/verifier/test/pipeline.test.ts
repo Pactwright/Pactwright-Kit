@@ -290,6 +290,31 @@ describe("Verifier Engine Pipeline", () => {
       ).rejects.toThrow(/can't be sent to the model/);
     });
 
+    it("retries a rate-limited provider, honoring Retry-After", async () => {
+      const statuses = [429, 503, 200];
+      const fetchImpl = (async () => {
+        const status = statuses.shift()!;
+        return status === 200
+          ? new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ detectedLanguage: "es", pageCount: 1, isTranslationOfSource: true, untranslatedSegments: 0, notes: "" }) } }] }))
+          : new Response("busy", { status, headers: { "retry-after": "1" } });
+      }) as unknown as typeof fetch;
+      const adapter = new ProviderNeutralLLMAdapter({ apiKey: "k", modelId: "m", fetchImpl });
+      const reading = await adapter.read(testReadingSchema, "instructions", [{ mimeType: "text/plain", data: Buffer.from("Hola") }]);
+      expect(reading).not.toBe("refusal");
+      expect(statuses).toHaveLength(0);
+    }, 20_000);
+
+    it("treats an empty LLM_BASE_URL as the provider default", async () => {
+      const calls: string[] = [];
+      const fetchImpl = (async (url: string) => {
+        calls.push(String(url));
+        return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ detectedLanguage: "es", pageCount: 1, isTranslationOfSource: true, untranslatedSegments: 0, notes: "" }) } }] }));
+      }) as unknown as typeof fetch;
+      const adapter = new ProviderNeutralLLMAdapter({ apiKey: "k", modelId: "m", baseUrl: "", fetchImpl });
+      await adapter.read(testReadingSchema, "instructions", [{ mimeType: "text/plain", data: Buffer.from("Hola") }]);
+      expect(calls[0]).toBe("https://api.openai.com/v1/chat/completions");
+    });
+
     it("fails closed instead of inventing a reading when no model is configured", async () => {
       const adapter = new ProviderNeutralLLMAdapter({ apiKey: "", modelId: "" });
       await expect(
