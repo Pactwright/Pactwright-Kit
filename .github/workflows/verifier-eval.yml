@@ -30,6 +30,7 @@ jobs:
   real-model:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: verifier-eval
     steps:
       - uses: actions/checkout@v4
