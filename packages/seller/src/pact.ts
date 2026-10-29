@@ -19,6 +19,32 @@ export interface PactRouteOptions<Req = unknown> {
   meter?: { unit: string; unitPrice: string };
 }
 
+/**
+ * Default deadline lengths per condition kind (ROADMAP V-11, Q6).
+ * Measured from eval benchmark set (deterministic rules < 1ms, model latency p95 ~2.5s):
+ * - verdictLedgers: 120 ledgers (~10 minutes at 5s/ledger) provides a resilient 100x cushion for model response and retry.
+ * - settleLedgers: 720 ledgers (~1 hour at 5s/ledger) provides sufficient time for buyer settlement or dispute before auto-release.
+ */
+export const DEFAULT_DEADLINES_BY_KIND: Record<string, { verdictLedgers: number; settleLedgers: number }> = {
+  "document.translation": { verdictLedgers: 120, settleLedgers: 720 },
+};
+
+export const DEFAULT_DEADLINES = {
+  verdictLedgers: 120,
+  settleLedgers: 720,
+} as const;
+
+export function resolveDeadlines(
+  deadlines?: { verdictLedgers: number; settleLedgers: number },
+  kind?: string,
+): { verdictLedgers: number; settleLedgers: number } {
+  if (deadlines) return deadlines;
+  if (kind && DEFAULT_DEADLINES_BY_KIND[kind]) {
+    return DEFAULT_DEADLINES_BY_KIND[kind]!;
+  }
+  return DEFAULT_DEADLINES;
+}
+
 export interface SellerConfig {
   network?: string;
   sellerAddress?: string;

@@ -1,0 +1,22 @@
+{
+  "id": "deny_untranslated_segments_1_exceeds_0",
+  "description": "Untranslated segments (1) exceeds allowed max (0)",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "fr",
+    "minPages": 1,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "fr",
+    "pageCount": 2,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 1,
+    "notes": "Incomplete translation"
+  },
+  "expected": {
+    "verdict": "DENY",
+    "reason": "TASK_NOT_DONE"
+  }
+}

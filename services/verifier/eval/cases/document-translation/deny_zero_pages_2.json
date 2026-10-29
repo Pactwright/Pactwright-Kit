@@ -1,0 +1,22 @@
+{
+  "id": "deny_zero_pages_2",
+  "description": "Zero pages delivered (case 2)",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "it",
+    "minPages": 2,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "it",
+    "pageCount": 0,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Empty file"
+  },
+  "expected": {
+    "verdict": "DENY",
+    "reason": "TASK_NOT_VISIBLE"
+  }
+}

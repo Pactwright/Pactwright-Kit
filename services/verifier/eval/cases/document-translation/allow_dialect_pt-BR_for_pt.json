@@ -1,0 +1,22 @@
+{
+  "id": "allow_dialect_pt-BR_for_pt",
+  "description": "Dialect match: pt-BR matches pt",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "pt",
+    "minPages": 1,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "pt-BR",
+    "pageCount": 1,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Dialect match"
+  },
+  "expected": {
+    "verdict": "ALLOW",
+    "amountStroops": "10000000"
+  }
+}

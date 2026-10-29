@@ -1,11 +1,19 @@
 name: verifier-eval
 # verifier accuracy; fails below threshold (ROADMAP V-08)
 on:
+  push:
+    branches: [main]
   pull_request:
 
 jobs:
   run:
-    if: false   # enabled in ROADMAP V-08
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node services/verifier/eval/run.ts

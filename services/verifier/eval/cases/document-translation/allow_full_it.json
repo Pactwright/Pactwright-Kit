@@ -1,0 +1,22 @@
+{
+  "id": "allow_full_it",
+  "description": "Full translation in it",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "it",
+    "minPages": 2,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "it",
+    "pageCount": 2,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Complete"
+  },
+  "expected": {
+    "verdict": "ALLOW",
+    "amountStroops": "10000000"
+  }
+}

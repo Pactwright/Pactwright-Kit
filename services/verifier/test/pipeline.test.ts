@@ -333,4 +333,77 @@ describe("Verifier Engine Pipeline", () => {
       expect(res.status).toBe("deny");
     });
   });
+
+  describe("V-09: Threshold handling (verify.minAmount)", () => {
+    it("returns receipt-only outcome without envelope when cap is below verify.minAmount", async () => {
+      const evidenceData = Buffer.from("Hola mundo!");
+      const evidenceHash = createHash("sha256").update(evidenceData).digest("hex");
+      const deliveryReceipt = `sha256=${evidenceHash}; sig=${Buffer.from("receipt-sig").toString("base64")}`;
+
+      const res = await runPipeline(
+        {
+          terms: {
+            ...mockTerms,
+            cap: "0.05",
+            verify: { minAmount: "0.10" },
+          },
+          evidence: [
+            {
+              ...validEvidence[0],
+              sha256: evidenceHash,
+            },
+          ],
+          deliveryReceipt,
+          milestone: "delivery",
+        },
+        {
+          verifierKey,
+          evidenceLoader: async () => evidenceData,
+        },
+      );
+
+      expect(res).not.toBe("no-verdict");
+      if (res !== "no-verdict") {
+        expect(res.receiptOnly).toBe(true);
+        expect(res.amount).toBe(500_000n); // 0.05 USDC in stroops
+        expect(res.envelope).toBeUndefined();
+        expect(res.envelopeRef).toBeUndefined();
+      }
+    });
+
+    it("evaluates full model pipeline when cap is at or above verify.minAmount", async () => {
+      const evidenceData = Buffer.from("Hola mundo!");
+      const evidenceHash = createHash("sha256").update(evidenceData).digest("hex");
+      const deliveryReceipt = `sha256=${evidenceHash}; sig=${Buffer.from("receipt-sig").toString("base64")}`;
+
+      const res = await runPipeline(
+        {
+          terms: {
+            ...mockTerms,
+            cap: "0.50",
+            verify: { minAmount: "0.10" },
+          },
+          evidence: [
+            {
+              ...validEvidence[0],
+              sha256: evidenceHash,
+            },
+          ],
+          deliveryReceipt,
+          milestone: "delivery",
+        },
+        {
+          verifierKey,
+          evidenceLoader: async () => evidenceData,
+        },
+      );
+
+      expect(res).not.toBe("no-verdict");
+      if (res !== "no-verdict") {
+        expect(res.receiptOnly).toBeUndefined();
+        expect(res.envelope).toBeDefined();
+        expect(res.envelope?.verdict.decision).toBe("ALLOW");
+      }
+    });
+  });
 });

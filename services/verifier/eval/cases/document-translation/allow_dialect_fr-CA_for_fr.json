@@ -1,0 +1,22 @@
+{
+  "id": "allow_dialect_fr-CA_for_fr",
+  "description": "Dialect match: fr-CA matches fr",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "fr",
+    "minPages": 1,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "fr-CA",
+    "pageCount": 1,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Dialect match"
+  },
+  "expected": {
+    "verdict": "ALLOW",
+    "amountStroops": "10000000"
+  }
+}

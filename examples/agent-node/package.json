@@ -3,7 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "start": "node src/index.ts"
+  },
   "dependencies": {
-    "@pactwright/core": "workspace:*"
+    "@pactwright/core": "workspace:*",
+    "@pactwright/agent": "workspace:*",
+    "@pactwright/adapters": "workspace:*"
   }
 }

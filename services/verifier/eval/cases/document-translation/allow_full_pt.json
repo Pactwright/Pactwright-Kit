@@ -1,0 +1,22 @@
+{
+  "id": "allow_full_pt",
+  "description": "Full translation in pt",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "pt",
+    "minPages": 2,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "pt",
+    "pageCount": 2,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Complete"
+  },
+  "expected": {
+    "verdict": "ALLOW",
+    "amountStroops": "10000000"
+  }
+}

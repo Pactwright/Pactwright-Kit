@@ -1,0 +1,22 @@
+{
+  "id": "allow_prorata_1_of_2p",
+  "description": "Pro-rata delivery: 1 of 2 pages",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "es",
+    "minPages": 2,
+    "maxUntranslatedSegments": 1
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "es",
+    "pageCount": 1,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Partial pages"
+  },
+  "expected": {
+    "verdict": "ALLOW",
+    "amountStroops": "5000000"
+  }
+}

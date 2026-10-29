@@ -1,0 +1,22 @@
+{
+  "id": "allow_full_nl",
+  "description": "Full translation in nl",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "nl",
+    "minPages": 2,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "nl",
+    "pageCount": 2,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Complete"
+  },
+  "expected": {
+    "verdict": "ALLOW",
+    "amountStroops": "10000000"
+  }
+}

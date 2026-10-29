@@ -1,0 +1,22 @@
+{
+  "id": "deny_lang_mismatch_en_for_de",
+  "description": "Language mismatch: delivered en when de required",
+  "condition": {
+    "kind": "document.translation",
+    "lang": "de",
+    "minPages": 1,
+    "maxUntranslatedSegments": 0
+  },
+  "cap": "1.00",
+  "reading": {
+    "detectedLanguage": "en",
+    "pageCount": 1,
+    "isTranslationOfSource": true,
+    "untranslatedSegments": 0,
+    "notes": "Wrong language"
+  },
+  "expected": {
+    "verdict": "DENY",
+    "reason": "CONDITION_MISMATCH"
+  }
+}

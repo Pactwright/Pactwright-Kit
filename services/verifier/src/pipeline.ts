@@ -21,16 +21,19 @@ export interface PipelineInput {
   evidence: EvidenceItem[];
   deliveryReceipt?: string;
   milestone: "delivery" | `dispute-${number}`;
+  minAmount?: string;
 }
 
 export interface PipelineResult {
-  envelope: VerdictEnvelope;
+  envelope?: VerdictEnvelope;
   /** `verdict-v1 sha256=<hex> uri=<uri>` */
-  envelopeRef: string;
+  envelopeRef?: string;
   /** Escrow only: base64 XDR attestation + signature. */
   attestation?: { xdr: string; signature: string };
   /** Stroops owed to the seller (partial delivery). */
   amount: bigint;
+  /** True when pact is below verify.minAmount threshold (receipt only, no envelope). */
+  receiptOnly?: boolean;
 }
 
 export interface PipelineOptions {
@@ -142,6 +145,18 @@ export async function runPipeline(
       attestation: signRes.attestation,
       amount: 0n,
     };
+  }
+
+  // V-09: Below verify.minAmount, skip model verification; return receipt-only outcome.
+  const minAmount = input.minAmount ?? terms.verify?.minAmount;
+  if (minAmount) {
+    const minStroops = toStroops(minAmount);
+    if (capStroops < minStroops) {
+      return {
+        receiptOnly: true,
+        amount: capStroops,
+      };
+    }
   }
 
   // 2. Evidence hash verification
