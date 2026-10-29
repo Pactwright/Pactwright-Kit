@@ -16,7 +16,9 @@
   },
   "dependencies": {
     "@pactwright/core": "workspace:*",
-    "@pactwright/agent": "workspace:*"
+    "@pactwright/agent": "workspace:*",
+    "@witness/core": "workspace:*",
+    "@stellar/stellar-base": "^15.0.0"
   },
   "bin": {
     "pactwright": "./dist/index.js"

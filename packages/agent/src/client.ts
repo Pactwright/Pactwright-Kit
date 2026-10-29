@@ -10,6 +10,8 @@ export interface PactwrightConfig {
   network: NetworkConfig;
   wallet: Wallet;
   verifierUrl: string;
+  facilitatorUrl?: string;
+  fetchImpl?: typeof fetch;
   adapters: {
     discovery: Discovery;
     reputation: Reputation;

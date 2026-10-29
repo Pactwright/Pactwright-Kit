@@ -1,9 +1,19 @@
 import type { z } from "zod";
+import type { Pactwright } from "@pactwright/agent";
 
-/** A tool definition, independent of the MCP SDK until K-11 wires it in. */
+export interface ToolContext {
+  agent?: Pactwright;
+}
+
+/** A tool definition wired to the MCP server. */
 export interface ToolDefinition<Input extends z.ZodType = z.ZodType> {
   name: string;
   description: string;
   input: Input;
-  handler: (input: z.infer<Input>) => Promise<unknown>;
+  inputSchema?: {
+    type: "object";
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
+  handler: (input: z.infer<Input>, context?: ToolContext) => Promise<unknown>;
 }

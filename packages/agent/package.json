@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@pactwright/core": "workspace:*",
-    "@pactwright/adapters": "workspace:*"
+    "@pactwright/adapters": "workspace:*",
+    "@stellar/stellar-base": "^15.0.0"
   },
   "files": [
     "dist"
