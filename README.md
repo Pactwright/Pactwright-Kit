@@ -34,8 +34,7 @@
 > [!IMPORTANT]
 > **Testnet only, not published yet.** Every MVP scenario runs as real Stellar testnet
 > transactions through the Kit's own code, including full x402 purchases through Accensa's
-> facilitator ([evidence](#testnet-evidence)). The facilitator's `pact` scheme is still in review
-> and not hosted yet. [What works today](#what-works-today) shows each piece. Nothing is on npm yet.
+> facilitator, hosted on testnet ([evidence](#testnet-evidence)). [What works today](#what-works-today) shows each piece. Nothing is on npm yet.
 
 ## Contents
 
@@ -124,7 +123,7 @@ sequenceDiagram
 | `@pactwright/seller` middleware | ✅ Testnet | x402 v2 paywall: a valid 402, payments verified and settled by the facilitator before anything is served, `pact_id` derived from the verified payer, signed `X-Pactwright-Delivery`, one serve per pact (Express and Hono). No default payee, delivery key or verifier |
 | `@pactwright/agent` accounts | 🧪 Tested offline | Sponsored agent accounts and top-ups, submitted through RPC; never returns the hash of an unsent transaction |
 | `@pactwright/agent` buy | ✅ Testnet | x402: reads the 402, refuses terms that differ from the listing or the frozen condition, pays with `exact` (M0) or `pact` (M2), signing only auth entries |
-| Facilitator `pact` scheme | 🚧 In review | Built in the Accensa facilitator ([#651](https://github.com/accensa/x402-facilitator-stellar/pull/651)) and used by the testnet run; no hosted facilitator yet |
+| Facilitator `pact` scheme | ✅ Testnet | Merged in Accensa's facilitator ([#651](https://github.com/accensa/x402-facilitator-stellar/pull/651)) and hosted at `pactwright-facilitator-testnet.onrender.com`; the testnet run's x402 rows go through it |
 | `@pactwright/mcp`, `@pactwright/cli` | 🧪 Tested offline | MCP tools and CLI commands; `buy` and `agent-*` inherit the status of the agent rows above |
 | Adapters | ⚙️ Partner APIs | Vespi gate and Pollar wallet fail closed when their APIs are unreachable. Partner access is F-08 / F-09 |
 
@@ -139,40 +138,40 @@ and the seller's refund and settle hooks.
 The two **x402** rows are the full purchase flow:
 1. The Kit agent requests a resource from the Kit's `pact()` seller middleware and gets a 402.
 2. The agent pays with its built-in x402 payment, signing only auth entries.
-3. Accensa's x402 facilitator ([`pact` scheme](https://github.com/accensa/x402-facilitator-stellar/pull/651)) verifies the payment, pays the fee and settles it.
+3. Accensa's x402 facilitator, hosted on testnet at `https://pactwright-facilitator-testnet.onrender.com` with the [`pact` scheme](https://github.com/accensa/x402-facilitator-stellar/pull/651), verifies the payment, pays the fee and settles it.
 4. The seller serves the content with a delivery receipt, which is then checked like the verifier checks it.
 
 For M2, the verdict and the seller's settle also go through the facilitator's `/pact/submit`.
 
 | Scenario | Outcome | Step | Transaction |
 |---|---|---|---|
-| **M0 ALLOW** | ALLOW, seller keeps 1 | x402 exact payment to seller | [`d20c598d…`](https://stellar.expert/explorer/testnet/tx/d20c598dea58458f83a27f6c905191f72d2e81e86b6c9234cad19c230c79dee9) |
-| **M0 DENY** | DENY, 1 refunded | x402 exact payment to seller | [`8fe40e82…`](https://stellar.expert/explorer/testnet/tx/8fe40e8263a221b5f731edd8b6fa01fd3ba31fe83c1f8630c603837d53ae4495) |
-|  |  | RefundVault.refund | [`a2410a5a…`](https://stellar.expert/explorer/testnet/tx/a2410a5a3536a92ae352250f963f9f5970932b26f3ef6093d4fbba34a431dadf) |
-| **M0 non-delivery** | DENY, 0.5 refunded | x402 exact payment to seller | [`cc807371…`](https://stellar.expert/explorer/testnet/tx/cc8073719a89b4798f82bbac7b88e6b4b50c0aadd294fcedbf9ae8fbfe8e76fa) |
-|  |  | RefundVault.refund | [`4ee4b496…`](https://stellar.expert/explorer/testnet/tx/4ee4b49675f0be868145d21fa5bdcd740d925a09fd9ee66a2e2be8072373ba23) |
-| **M2 ALLOW** | ALLOW 0.75 of 1, settled | open (1 USDC locked in escrow) | [`28064f6f…`](https://stellar.expert/explorer/testnet/tx/28064f6ff11a167a7da88165fa585e3e76f5d61a128ec98078005f0ff652af1a) |
-|  |  | record_verdict (ALLOW 0.75, verifier-signed) | [`130da09f…`](https://stellar.expert/explorer/testnet/tx/130da09f02d142b1f3fedd1c0c7a57fb2c56430cca70af7f8c0c7852b4464f60) |
-|  |  | settle (0.75 to seller, 0.25 back to buyer) | [`67d48bd3…`](https://stellar.expert/explorer/testnet/tx/67d48bd32ec1ce1898b5ff908aecf55d1fb1f2ab37b8fd3563e01a6790689cf8) |
-| **M2 DENY** | DENY, full refund | open (1 USDC locked in escrow) | [`3bb94d92…`](https://stellar.expert/explorer/testnet/tx/3bb94d92c321b48395137cdacf09c18962b66cfd47d5ffb0699df86f8e693d23) |
-|  |  | record_verdict (DENY, verifier-signed) | [`4876a9cb…`](https://stellar.expert/explorer/testnet/tx/4876a9cbcefea4155b5ee1830e62984762919bc7b24f4ff5ef9fa606adfd21c5) |
-|  |  | release (1 USDC back to buyer) | [`50cef2fd…`](https://stellar.expert/explorer/testnet/tx/50cef2fdc1cede817c25934d36ddfebb5f2d42d3f978ddb2d1f9785f68218149) |
-| **M2 silence** | no verdict, refunded by silence policy | open (1 USDC locked in escrow) | [`ced11714…`](https://stellar.expert/explorer/testnet/tx/ced11714739979083aa348793b361d350c6e935d5027e66a571e428b8700cf3e) |
-|  |  | release after the verdict deadline (silence = Refund) | [`603d3e8b…`](https://stellar.expert/explorer/testnet/tx/603d3e8be222965c5d59ac202ad0af9cc74155d570978c7db63e187a2d8c759d) |
-| **Dispute refund** | dispute-1: 2 of 4 pages, 0.5 refunded | RefundVault.refund (dispute-1) | [`85a7b40e…`](https://stellar.expert/explorer/testnet/tx/85a7b40eb77a73c046974a1f7b9dd673002df5e4f42bde068b34dffdcece5593) |
-| **x402 M0 (exact)** | paid over x402, receipt verified | x402 exact payment (facilitator-paid fee) | [`a7da7309…`](https://stellar.expert/explorer/testnet/tx/a7da7309ebb4ecf6880c129b29002fe26503320132ca6e02d0126d248bfa9f0f) |
-| **x402 M2 (pact)** | ALLOW 1, settled; every fee paid by the facilitator | x402 pact.open (facilitator-paid fee) | [`19fe0413…`](https://stellar.expert/explorer/testnet/tx/19fe0413cb94e2b23f12df83d19559f4a9a5ed0437a915c00e337027a09fbbf6) |
-|  |  | record_verdict via /pact/submit | [`7fcf67b8…`](https://stellar.expert/explorer/testnet/tx/7fcf67b87f5d742966470d72f5ffbf7151b01159cad9512efe0cba8cd285d822) |
-|  |  | settle via /pact/submit (seller-signed) | [`6aeb2fce…`](https://stellar.expert/explorer/testnet/tx/6aeb2fcef470847eb772cac95b9e725c3bb9e57a2466a92ca46505fd8dd26fdb) |
+| **M0 ALLOW** | ALLOW, seller keeps 1 | x402 exact payment to seller | [`38509ae3…`](https://stellar.expert/explorer/testnet/tx/38509ae3c467052fe517a7303543efc69e8fc9e1ae32022d31e729df3613b398) |
+| **M0 DENY** | DENY, 1 refunded | x402 exact payment to seller | [`1b639eab…`](https://stellar.expert/explorer/testnet/tx/1b639eab020686ab11cf02961c53ae5aa2dc8dbd8afeab7aafc935a76f192bfb) |
+|  |  | RefundVault.refund | [`2bc4f53d…`](https://stellar.expert/explorer/testnet/tx/2bc4f53d42160e6b03bdd53e818824c8a8634ad904f4ea2608f99510dbf579a3) |
+| **M0 non-delivery** | DENY, 0.5 refunded | x402 exact payment to seller | [`b3b37888…`](https://stellar.expert/explorer/testnet/tx/b3b378880ea29951cd3185354e6542d6d6c6ec5dcfbe15a5fcdb263373e66441) |
+|  |  | RefundVault.refund | [`d9b68052…`](https://stellar.expert/explorer/testnet/tx/d9b68052f92b3c108578d979e7625b9478c4934ca84e213838009100162794bc) |
+| **M2 ALLOW** | ALLOW 0.75 of 1, settled | open (1 USDC locked in escrow) | [`a774fa79…`](https://stellar.expert/explorer/testnet/tx/a774fa79daa77a4eca3946aa52e137041b2743568ee2f96c9c0ceec1bbe10b6f) |
+|  |  | record_verdict (ALLOW 0.75, verifier-signed) | [`15263e7c…`](https://stellar.expert/explorer/testnet/tx/15263e7cfd4b206b350aa3fc97e200e76984f07b7fde4b0dc5ed54d41c009dec) |
+|  |  | settle (0.75 to seller, 0.25 back to buyer) | [`18ea30d9…`](https://stellar.expert/explorer/testnet/tx/18ea30d9838dbbaa774aeffc44c55abc91e79fc69659fcc81b73fda4f2b05496) |
+| **M2 DENY** | DENY, full refund | open (1 USDC locked in escrow) | [`9a49c8fa…`](https://stellar.expert/explorer/testnet/tx/9a49c8fa14469a8ce788133d42b6d01d1b8091598ff8b13a9d45fe55a43768ce) |
+|  |  | record_verdict (DENY, verifier-signed) | [`d53cc633…`](https://stellar.expert/explorer/testnet/tx/d53cc6336940ff01b7af6caab8f39dc8bd12ab43fda8eee76d52e355809e096a) |
+|  |  | release (1 USDC back to buyer) | [`eae7c711…`](https://stellar.expert/explorer/testnet/tx/eae7c7118268818c9ff700a724647c0713295bd74e945f89f9c1aece572c7bcc) |
+| **M2 silence** | no verdict, refunded by silence policy | open (1 USDC locked in escrow) | [`105581ce…`](https://stellar.expert/explorer/testnet/tx/105581cea5979e0c03a3bc635c2f55ffe8efe5f62a58a078004a597bab621d03) |
+|  |  | release after the verdict deadline (silence = Refund) | [`2a4c579d…`](https://stellar.expert/explorer/testnet/tx/2a4c579d95861cbd4d6ae39e3d6d7956f5083fe5e16df20ee0a1d6224aee84fb) |
+| **Dispute refund** | dispute-1: 2 of 4 pages, 0.5 refunded | RefundVault.refund (dispute-1) | [`79d22019…`](https://stellar.expert/explorer/testnet/tx/79d22019715f76cd500b85c1581415cad02878ec44d623fd5d35666a83b014b6) |
+| **x402 M0 (exact)** | paid over x402, receipt verified | x402 exact payment (facilitator-paid fee) | [`f59c4181…`](https://stellar.expert/explorer/testnet/tx/f59c4181d418da5723255e61a8acdd37f11cdb40e9a3d3c5b07850ee7dce91be) |
+| **x402 M2 (pact)** | ALLOW 1, settled; every fee paid by the facilitator | x402 pact.open (facilitator-paid fee) | [`a33591a1…`](https://stellar.expert/explorer/testnet/tx/a33591a1768b548516f1222d34167a37c17069eb377073f50e07f26cef8071b5) |
+|  |  | record_verdict via /pact/submit | [`9d63a621…`](https://stellar.expert/explorer/testnet/tx/9d63a621dda5573a36a8eb2e8aab0f2715a14674e9804691799b0ca1b82fe895) |
+|  |  | settle via /pact/submit (seller-signed) | [`51d659e4…`](https://stellar.expert/explorer/testnet/tx/51d659e4ee18c066088ec922202b3380d179909d2f8745f09b25f5878a2cb073) |
 
 What isn't real here: the model's reading of each delivery is a fixture, so the verdict depends
 only on the deterministic rules. The non-x402 rows send payments directly. The full report, with
 buyer, seller and receipt leaves, is [`e2e/testnet/results/2026-10-29.json`](e2e/testnet/results/2026-10-29.json).
 
-Run it yourself. The x402 rows need a facilitator with `PACT_CONTRACT_ID` set:
+Run it yourself. The nightly workflow runs it too, x402 rows included, against the hosted facilitator:
 
 ```bash
-E2E_VERIFIER_SECRET=S… E2E_FACILITATOR_URL=http://localhost:3402 pnpm e2e:testnet
+E2E_VERIFIER_SECRET=S… E2E_FACILITATOR_URL=https://pactwright-facilitator-testnet.onrender.com pnpm e2e:testnet
 ```
 
 ## Packages
@@ -295,7 +294,7 @@ every envelope.
 | Core, contract client, verifier, seller hooks | Working, proven on testnet |
 | Nightly testnet e2e | Workflow ready; needs the `TESTNET_VERIFIER_SECRET` repo secret (K-16) |
 | Agent x402 payment | Working on testnet (K-08, K-09) |
-| Facilitator `pact` scheme | In review: accensa/x402-facilitator-stellar#651 (X-01…X-08) |
+| Facilitator `pact` scheme | Merged and hosted on testnet (X-01…X-08, L-08) |
 | npm release | Not yet (K-17) |
 
 [ROADMAP.md](ROADMAP.md) tracks every task and its progress. Every pull request updates it.
@@ -304,7 +303,7 @@ every envelope.
 
 **Can I use this today?** On testnet, from this repo: the agent, the seller middleware, the verifier,
 the contract client and the core library all work, as the [testnet evidence](#testnet-evidence) shows.
-You need a facilitator with the `pact` scheme (run Accensa's locally until it's hosted). Nothing is on
+The hosted testnet facilitator at `pactwright-facilitator-testnet.onrender.com` speaks the `pact` scheme. Nothing is on
 npm yet.
 
 **Why does the verifier use a model at all?** Because "is this a correct Portuguese translation?"

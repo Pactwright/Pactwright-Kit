@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #90 | — (L-08, master) | The testnet e2e ran its x402 rows through the hosted Render facilitator (`pactwright-facilitator-testnet.onrender.com`): 18/18 transactions SUCCESS. The nightly now points at it, with an optional `E2E_FACILITATOR_API_KEY` for when the facilitator requires keys. README evidence refreshed. |
 | 2026-10-29 | #88 | V-10 stays `[~]`; L-08 stays `[~]` | Adjust Render Blueprint to free tier (`plan: free`) for `pactwright-facilitator-testnet` and `pactwright-verifier-testnet`, validating cleanly against Render CLI without requiring a credit card. (refs #78, #79) |
 | 2026-10-29 | #87 | P7-08 → `[x]` | Remote KMS signing for seller merchant keys: `RemoteKmsSigner` with HashiCorp Vault Transit ed25519 engine and HTTP remote endpoint integration, `DecoratedSignature` building for Stellar transaction envelopes, fail-closed security preventing fallback to local or random keys; verified with on-chain testnet refund tx `a2410a5a3536a92ae352250f963f9f5970932b26f3ef6093d4fbba34a431dadf`. (closes #83) |
 | 2026-10-29 | #86 | K-18 → `[x]` | Drop leftover `shardId` from `CertificateSchema` and ARCHITECTURE copy, add `leafInput` matching Studio's `/api/certificates/:id`. (closes #82) |
