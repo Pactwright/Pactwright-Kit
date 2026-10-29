@@ -18,7 +18,7 @@ export default defineConfig({
   },
   test: {
     root,
-    include: ["e2e/testnet/run.e2e.ts"],
+    include: [process.env.E2E_FILE ?? "e2e/testnet/run.e2e.ts"],
     testTimeout: 900_000,
   },
 });
