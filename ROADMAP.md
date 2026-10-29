@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **48 / 54 tasks (89%)** |
+| Progress | **49 / 54 tasks (91%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -17,7 +17,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 |---|---|---|---|
 | Foundations (this repo) | 7 | 7 | 100% |
 | Phase 3 — Kit | 18 | 17 | 94% |
-| Phase 4 — Verifier | 12 | 10 | 83% |
+| Phase 4 — Verifier | 12 | 11 | 92% |
 | Phase 7 — v1 | 10 | 7 | 70% |
 | Phase 9 — v2 | 7 | 7 | 100% |
 
@@ -70,7 +70,7 @@ Trustworthy, reproducible verdicts for one condition kind.
 - [x] **V-08** Eval set (≥ 50 labelled cases) + accuracy script + `verifier-eval.yml` (fails < 90%) — wave · H · V-04 (#72, 2026-10-29)
 - [x] **V-09** `verify.minAmount` handling (receipt-only below threshold) — wave · M · V-05 · FR-V7 (#72, 2026-10-29)
 - [~] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 — the Render deploy failed to build (Dockerfile missed tsconfig.base.json, fixed in #89); needs EVIDENCE_BUCKET_URL on Render to start
-- [~] **V-12** Real-model accuracy: run the labelled eval set through the configured model (not hand-written readings) and gate on ≥ 90% (#80) — core · H · V-10 · PRD §8 — 29 real-document cases and the runner are in `eval/real/`; done once a run with the pinned model is recorded — runner exists (#85) but has never run: no `verifier-eval` environment or model key
+- [x] **V-12** Real-model accuracy: run the labelled eval set through the configured model (not hand-written readings) and gate on ≥ 90% (#80) — core · H · V-10 · PRD §8 (#92, 2026-10-29)
 - [x] **V-11** Measure verification latency; set default deadline lengths; answer Q6 — core · M · V-10 · Q6 (#72, 2026-10-29)
 
 ## Phase 7 — v1
@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #92 | V-12 → `[x]` | Real-model eval: 29/29 (100%) on the labelled `document.translation` cases through the full pipeline with Google `gemini-3.5-flash-lite` (run 40897633766). Got there by fixing the empty base URL, adding a request timeout (a run hung 35 min) and 429/503 retries. The Render verifier now uses the same model config. |
 | 2026-10-29 | #92 | — (V-12) | The first real-model eval run failed before reaching the model: an empty `LLM_BASE_URL` (unset CI variable) became the base URL, so every call went to `/chat/completions`. Empty now means the provider default. |
 | 2026-10-29 | #89 | P7-08 → `[~]`; V-10, V-12 notes | Crosscheck: the verifier's Render build failed (`tsconfig.base.json` not in the image), fixed, and CI now builds the image and checks it refuses to start unconfigured. KMS: removed the random-key fallback and the guessed Vault key name, added a signature check against the configured key, removed a test that only asserted a hard-coded transaction string; the cited refund wasn't KMS-signed, so P7-08 is reopened. The real-model eval (#85) has never run. Leftover `shardId` lines removed from docs/ARCHITECTURE.md. |
 | 2026-10-29 | #88 | V-10 stays `[~]`; L-08 stays `[~]` | Adjust Render Blueprint to free tier (`plan: free`) for `pactwright-facilitator-testnet` and `pactwright-verifier-testnet`, validating cleanly against Render CLI without requiring a credit card. (refs #78, #79) |
