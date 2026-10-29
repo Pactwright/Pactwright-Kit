@@ -18,6 +18,10 @@ export interface VerifierConfig {
   evidenceBucketUrl: string;
   /** Stellar RPC: the current ledger goes into every escrow attestation. */
   rpcUrl: string;
+  /** Where this service is reachable; envelope references point at `<publicUrl>/v1/envelopes/<sha256>`. */
+  publicUrl: string;
+  /** Postgres for envelopes. Required in production so they survive restarts; memory otherwise. */
+  databaseUrl?: string;
   /** Seconds a seller has to answer a non-delivery challenge. */
   nonDeliveryTimeoutSec: number;
   port: number;
@@ -69,6 +73,14 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
   if (facilitatorUrl) url(facilitatorUrl, "FACILITATOR_URL", problems);
   if (evidenceBucketUrl) url(evidenceBucketUrl, "EVIDENCE_BUCKET_URL", problems);
   if (rpcUrl) url(rpcUrl, "STELLAR_RPC_URL", problems);
+  // Render injects RENDER_EXTERNAL_URL; VERIFIER_PUBLIC_URL wins when both are set.
+  const publicUrl = (env.VERIFIER_PUBLIC_URL?.trim() || env.RENDER_EXTERNAL_URL?.trim() || "").replace(/\/+$/, "");
+  if (!publicUrl) problems.push("VERIFIER_PUBLIC_URL is not set (the URL envelope references point at)");
+  else url(publicUrl, "VERIFIER_PUBLIC_URL", problems);
+  const databaseUrl = env.VERIFIER_DATABASE_URL?.trim() || env.DATABASE_URL?.trim() || undefined;
+  if (!databaseUrl && env.NODE_ENV === "production") {
+    problems.push("DATABASE_URL is not set (production keeps envelopes in Postgres so they survive restarts)");
+  }
   const nonDeliveryTimeoutSec = positiveInt(env.NON_DELIVERY_TIMEOUT_SEC, 300, "NON_DELIVERY_TIMEOUT_SEC", problems);
   // Hosts such as Render inject PORT; VERIFIER_PORT wins when both are set.
   const portVar = env.VERIFIER_PORT?.trim() ? "VERIFIER_PORT" : "PORT";
@@ -94,6 +106,8 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
     facilitatorUrl,
     evidenceBucketUrl,
     rpcUrl,
+    publicUrl,
+    ...(databaseUrl ? { databaseUrl } : {}),
     nonDeliveryTimeoutSec,
     port,
   };

@@ -11,7 +11,7 @@ import type { VerifierConfig } from "./config.ts";
 import { createEvidenceLoader } from "./evidence.ts";
 import { ProviderNeutralLLMAdapter } from "./models/llm.ts";
 import { runPipeline, type PipelineInput, type PipelineResult } from "./pipeline.ts";
-import { DuplicateVerdictError, MemoryVerdictStore, type VerdictStore } from "./store.ts";
+import { DuplicateVerdictError, MemoryVerdictStore, PostgresVerdictStore, type VerdictStore } from "./store.ts";
 
 export const VerdictRequestSchema = z.object({
   terms: PactTermsSchema,
@@ -24,6 +24,8 @@ export const VerdictRequestSchema = z.object({
 export interface AppDeps {
   verifierKey: Keypair;
   store: VerdictStore;
+  /** Reported on /health so a deployment that would lose envelopes is visible. */
+  storeKind?: "postgres" | "memory";
   pipeline: (input: PipelineInput) => Promise<PipelineResult | "no-verdict">;
 }
 
@@ -37,6 +39,7 @@ export function createApp(deps: AppDeps): Hono {
       ok: true,
       verifier: deps.verifierKey.publicKey(),
       verifierHex: deps.verifierKey.rawPublicKey().toString("hex"),
+      ...(deps.storeKind ? { store: deps.storeKind } : {}),
     }),
   );
 
@@ -108,10 +111,11 @@ export function createApp(deps: AppDeps): Hono {
 }
 
 /**
- * Starts the verifier with the in-memory store and the real pipeline: the configured model and
- * evidence fetched from the evidence bucket. Throws if the bucket can't be read over http(s).
+ * Starts the verifier with the real pipeline: the configured model, evidence fetched from the
+ * evidence bucket, and envelopes in Postgres (memory only when no database is configured).
+ * Throws if the bucket can't be read over http(s) or the database can't be reached.
  */
-export function startServer(config: VerifierConfig): ReturnType<typeof serve> {
+export async function startServer(config: VerifierConfig): Promise<ReturnType<typeof serve>> {
   const modelAdapter = new ProviderNeutralLLMAdapter({
     provider: config.provider,
     modelId: config.model,
@@ -120,15 +124,18 @@ export function startServer(config: VerifierConfig): ReturnType<typeof serve> {
     ...(config.llmBaseUrl ? { baseUrl: config.llmBaseUrl } : {}),
   });
   const evidenceLoader = createEvidenceLoader(config.evidenceBucketUrl);
+  const store = config.databaseUrl ? await PostgresVerdictStore.connect(config.databaseUrl) : new MemoryVerdictStore();
   const app = createApp({
     verifierKey: config.verifierKey,
-    store: new MemoryVerdictStore(),
+    store,
+    storeKind: config.databaseUrl ? "postgres" : "memory",
     pipeline: async (input) =>
       runPipeline(input, {
         verifierKey: config.verifierKey,
         modelAdapter,
         evidenceLoader,
         ledgerSeq: await currentLedger(config.rpcUrl),
+        envelopeBaseUrl: config.publicUrl,
       }),
   });
   return serve({ fetch: app.fetch, port: config.port });

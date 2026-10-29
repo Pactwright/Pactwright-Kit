@@ -43,6 +43,8 @@ export interface PipelineOptions {
   evidenceLoader?: (item: EvidenceItem) => Promise<Uint8Array>;
   ledgerSeq?: number;
   settledLedger?: number;
+  /** Public base URL serving `/v1/envelopes/<sha256>`, used in envelope references. */
+  envelopeBaseUrl?: string;
 }
 
 export function parseDeliveryHeader(header: string): { bodySha256: string; signature: string } | null {
@@ -97,6 +99,7 @@ export async function runPipeline(
         verifierKey,
         milestone,
         ledgerSeq: options.ledgerSeq,
+        envelopeBaseUrl: options.envelopeBaseUrl,
       });
 
       return {
@@ -139,6 +142,7 @@ export async function runPipeline(
         verifierKey,
         milestone,
         ledgerSeq: options?.ledgerSeq,
+        envelopeBaseUrl: options?.envelopeBaseUrl,
       });
 
       return {
@@ -177,6 +181,7 @@ export async function runPipeline(
       verifierKey,
       milestone,
       ledgerSeq: options?.ledgerSeq,
+      envelopeBaseUrl: options?.envelopeBaseUrl,
     });
 
     return {
@@ -213,6 +218,7 @@ export async function runPipeline(
       verifierKey,
       milestone,
       ledgerSeq: options?.ledgerSeq,
+      envelopeBaseUrl: options?.envelopeBaseUrl,
     });
     return { envelope: signRes.envelope, envelopeRef: signRes.envelopeRef, attestation: signRes.attestation, amount: 0n };
   }
@@ -257,6 +263,7 @@ export async function runPipeline(
         verifierKey,
         milestone,
         ledgerSeq: options?.ledgerSeq,
+        envelopeBaseUrl: options?.envelopeBaseUrl,
       });
 
       return {
@@ -295,6 +302,7 @@ export async function runPipeline(
           verifierKey,
           milestone,
           ledgerSeq: options?.ledgerSeq,
+          envelopeBaseUrl: options?.envelopeBaseUrl,
         });
 
         return {
@@ -341,6 +349,7 @@ export async function runPipeline(
       verifierKey,
       milestone,
       ledgerSeq: options?.ledgerSeq,
+      envelopeBaseUrl: options?.envelopeBaseUrl,
     });
 
     return {
@@ -371,6 +380,7 @@ export async function runPipeline(
     verifierKey,
     milestone,
     ledgerSeq: options?.ledgerSeq,
+    envelopeBaseUrl: options?.envelopeBaseUrl,
   });
 
   return {
