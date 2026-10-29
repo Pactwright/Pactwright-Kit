@@ -18,6 +18,8 @@ export interface LLMAdapterOptions {
   effort?: string;
   /** Per-request timeout for the provider call. Default 60 s (`VERIFIER_MODEL_TIMEOUT_MS`). */
   timeoutMs?: number;
+  /** Attempts for 429 / 503 responses, with backoff honoring `Retry-After`. Default 4. */
+  maxAttempts?: number;
   apiKey?: string;
   baseUrl?: string;
   fetchImpl?: typeof fetch;
@@ -72,6 +74,7 @@ export class ProviderNeutralLLMAdapter implements ModelAdapter {
   private readonly modelId: string;
   private readonly effort?: string;
   private readonly timeoutMs: number;
+  private readonly maxAttempts: number;
   private readonly baseUrl?: string;
   private readonly apiKey?: string;
   private readonly fetchImpl: typeof fetch;
@@ -83,6 +86,7 @@ export class ProviderNeutralLLMAdapter implements ModelAdapter {
     this.modelId = options?.modelId ?? process.env.VERIFIER_MODEL ?? "";
     this.effort = options?.effort ?? (process.env.VERIFIER_EFFORT?.trim() || undefined);
     this.timeoutMs = options?.timeoutMs ?? (Number(process.env.VERIFIER_MODEL_TIMEOUT_MS) || 60_000);
+    this.maxAttempts = options?.maxAttempts ?? 4;
     // An empty value (as CI passes for an unset variable) means "the provider default", not "".
     this.baseUrl = (options?.baseUrl ?? process.env.LLM_BASE_URL)?.trim() || undefined;
     this.apiKey = options?.apiKey ?? process.env.VERIFIER_LLM_API_KEY;
@@ -131,8 +135,8 @@ export class ProviderNeutralLLMAdapter implements ModelAdapter {
 
     // Provider HTTP call (no sampling parameters)
     const url = `${(this.baseUrl ?? "https://api.openai.com/v1").replace(/\/$/, "")}/chat/completions`;
-    // A hung provider must not hold a verdict (or the eval) forever.
-    const res = await this.fetchImpl(url, {
+    // Busy or rate-limited providers get a few bounded retries; a hung one times out.
+    const init = () => ({
       signal: AbortSignal.timeout(this.timeoutMs),
       method: "POST",
       headers: {
@@ -149,6 +153,13 @@ export class ProviderNeutralLLMAdapter implements ModelAdapter {
         ...(this.effort ? { reasoning_effort: this.effort } : {}),
       }),
     });
+    let res = await this.fetchImpl(url, init());
+    for (let attempt = 1; attempt < this.maxAttempts && (res.status === 429 || res.status === 503); attempt++) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const waitMs = Math.min(30_000, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2_000 * 2 ** attempt);
+      await new Promise((r) => setTimeout(r, waitMs));
+      res = await this.fetchImpl(url, init());
+    }
 
     if (!res.ok) {
       throw new Error(`LLM provider HTTP ${res.status}`);
