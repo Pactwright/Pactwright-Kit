@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Keypair, type VerificationEnvelope } from "@witness/core";
 import { NotImplementedError } from "@pactwright/core";
-import { createApp } from "../src/server.ts";
+import { createApp, currentLedger } from "../src/server.ts";
 import { DuplicateVerdictError, MemoryVerdictStore } from "../src/store.ts";
 import { loadVerifierConfig, type VerifierConfigError } from "../src/config.ts";
 import { runPipeline, type PipelineResult } from "../src/pipeline.ts";
@@ -105,6 +105,7 @@ describe("loadVerifierConfig", () => {
   const env = {
     VERIFIER_PROVIDER: "example", VERIFIER_MODEL: "model-1", VERIFIER_SECRET_KEY: key.secret(),
     VERIFIER_LLM_API_KEY: "test-key", FACILITATOR_URL: "https://facilitator.example", EVIDENCE_BUCKET_URL: "s3://evidence",
+    STELLAR_RPC_URL: "https://rpc.example",
   };
   it("loads a complete config with defaults", () => {
     const config = loadVerifierConfig(env);
@@ -112,6 +113,7 @@ describe("loadVerifierConfig", () => {
     expect(config.port).toBe(8787);
     expect(config.nonDeliveryTimeoutSec).toBe(300);
     expect(config.llmApiKey).toBe("test-key");
+    expect(config.rpcUrl).toBe("https://rpc.example");
   });
   it("listens on the host's PORT unless VERIFIER_PORT is set", () => {
     expect(loadVerifierConfig({ ...env, PORT: "10000" }).port).toBe(10000);
@@ -128,5 +130,16 @@ describe("loadVerifierConfig", () => {
       expect(problems).toMatch(/VERIFIER_SECRET_KEY is not a valid/);
       expect(problems).toMatch(/VERIFIER_PORT must be a positive integer/);
     }
+  });
+});
+
+describe("currentLedger", () => {
+  const rpc = (status: number, body: unknown) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+  it("reads the latest ledger sequence from the RPC", async () => {
+    expect(await currentLedger("https://rpc.example", rpc(200, { jsonrpc: "2.0", id: 1, result: { sequence: 61_234 } }))).toBe(61_234);
+  });
+  it("fails instead of guessing when the RPC gives no ledger", async () => {
+    await expect(currentLedger("https://rpc.example", rpc(200, { error: { message: "down" } }))).rejects.toThrow(/latest ledger/);
+    await expect(currentLedger("https://rpc.example", rpc(503, {}))).rejects.toThrow(/latest ledger/);
   });
 });

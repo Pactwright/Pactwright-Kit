@@ -46,7 +46,7 @@ export interface SignPipelineResult {
 }
 
 export async function signVerdict(params: SignPipelineParams): Promise<SignPipelineResult> {
-  const { terms, decision, evidence, verifierKey, milestone, ledgerSeq = 100 } = params;
+  const { terms, decision, evidence, verifierKey, milestone, ledgerSeq } = params;
 
   const condHash = terms.conditionHash || computeConditionHash(terms.condition);
 
@@ -81,6 +81,9 @@ export async function signVerdict(params: SignPipelineParams): Promise<SignPipel
       throw new Error(`Attestation already issued for pact ${terms.pactId}. Only one attestation per pact allowed.`);
     }
 
+    // The contract accepts an attestation only if opened_ledger <= issued_ledger <= now, so it
+    // must carry the real current ledger; a made-up one would be rejected on-chain.
+    if (ledgerSeq === undefined) throw new Error("an escrow attestation needs the current ledger (ledgerSeq)");
     const attestation: VerdictAttestation = {
       pactId: terms.pactId,
       conditionHash: condHash,

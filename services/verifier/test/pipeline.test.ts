@@ -348,6 +348,7 @@ describe("Verifier Engine Pipeline", () => {
         evidence: validEvidence,
         verifierKey,
         milestone: "delivery",
+        ledgerSeq: 500,
       });
 
       expect(res.envelope.signature).toBeTruthy();
@@ -371,6 +372,7 @@ describe("Verifier Engine Pipeline", () => {
         evidence: validEvidence,
         verifierKey,
         milestone: "delivery",
+        ledgerSeq: 500,
       });
 
       // Second attempt must throw
@@ -387,8 +389,23 @@ describe("Verifier Engine Pipeline", () => {
           evidence: validEvidence,
           verifierKey,
           milestone: "delivery",
+          ledgerSeq: 500,
         }),
       ).rejects.toThrow("Only one attestation per pact allowed");
+    });
+
+    it("stamps the attestation with the current ledger and refuses to sign without one", async () => {
+      const escrowTerms: PactTerms = { ...mockTerms, mode: "escrow" };
+      const params = {
+        terms: escrowTerms,
+        decision: { verdict: "ALLOW" as const, amount: toStroops("1.00"), criteria: [], reasons: ["OK" as const], policyVersion: "1" },
+        evidence: validEvidence,
+        verifierKey,
+        milestone: "delivery",
+      };
+      await expect(signVerdict(params)).rejects.toThrow(/current ledger/);
+      const res = await signVerdict({ ...params, ledgerSeq: 61_234 });
+      expect(res.attestation?.attestation.issuedLedger).toBe(61_234);
     });
   });
 
