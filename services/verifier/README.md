@@ -5,32 +5,48 @@ Witness-compatible verifier: delivery receipt → evidence hash → model reads 
 
 ## Testnet Deployment (ROADMAP V-10)
 
-- **Testnet Endpoint**: `https://verifier.pactwright.dev`
-- **Health Check**: `GET https://verifier.pactwright.dev/health`
-- **Envelopes Retrieval**: `GET https://verifier.pactwright.dev/v1/envelopes/:sha256`
-- **Verdict Evaluation**: `POST https://verifier.pactwright.dev/v1/verdicts`
+Not deployed yet. The verifier is hosted on Render from [`render.yaml`](../../render.yaml) at the
+repo root (service `pactwright-verifier-testnet`, next to the facilitator). Its public URL goes
+here, and into `VERIFIER_URL` defaults, once the first deploy is live.
+
+1. Render Dashboard → **New → Blueprint** → this repo. Render reads `render.yaml`.
+2. Fill in the `sync: false` secrets when asked. They stay in Render's secret store:
+   - `VERIFIER_SECRET_KEY`: the key the `pact` contract is configured with (`4efdaeb6…e4ff`).
+   - `VERIFIER_PROVIDER`, `VERIFIER_MODEL`, `VERIFIER_EFFORT`: the pinned provider, model and
+     effort. There is no default model.
+   - `VERIFIER_LLM_API_KEY`, and `LLM_BASE_URL` if the provider isn't the adapter's default.
+     The adapter speaks the OpenAI-compatible `chat/completions` API.
+   - `FACILITATOR_URL`: the facilitator service's public URL.
+   - `EVIDENCE_BUCKET_URL`: an https prefix the verifier can read. Evidence URIs must resolve
+     under it; anything else is refused before any fetch.
+3. Check that `GET <url>/health` returns `verifierHex` `4efdaeb6…e4ff`.
+
+The process refuses to start, listing every problem, if the model, its API key, the verifier key
+or the evidence bucket is missing: it never invents a reading.
+
+Endpoints: `GET /health`, `GET /v1/envelopes/:sha256`, `POST /v1/verdicts`.
+
+The envelope store is in memory: a restart or redeploy forgets stored envelopes (the contract's
+one-attestation-per-pact rule still holds on-chain).
 
 ### Container Build & Run
-
-To build the container image locally:
 
 ```bash
 docker build -f services/verifier/Dockerfile -t pactwright-verifier .
 ```
 
-To run the container:
-
 ```bash
-docker run -p 3000:3000 \
-  -e PORT=3000 \
+docker run -p 10000:10000 \
   -e VERIFIER_SECRET_KEY=<ed25519-secret-seed> \
-  -e FACILITATOR_URL=https://testnet.facilitator.stellar.org \
+  -e VERIFIER_PROVIDER=<provider> -e VERIFIER_MODEL=<pinned-model-id> \
+  -e VERIFIER_LLM_API_KEY=<api-key> \
+  -e FACILITATOR_URL=<facilitator-url> \
+  -e EVIDENCE_BUCKET_URL=<https-evidence-prefix> \
   pactwright-verifier
 ```
 
-Health check verification:
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:10000/health
 # {"ok":true,"verifier":"G...","verifierHex":"..."}
 ```
 

@@ -8,6 +8,10 @@ export interface VerifierConfig {
   model: string;
   /** Explicit reasoning effort, where the provider supports it. Recorded in every envelope. */
   effort?: string;
+  /** API key for the model provider. Required: the verifier never invents a reading. */
+  llmApiKey: string;
+  /** OpenAI-compatible base URL of the provider; the adapter's default when unset. */
+  llmBaseUrl?: string;
   /** Signs envelopes (Witness) and attestations (escrow). Same ed25519 key. */
   verifierKey: Keypair;
   facilitatorUrl: string;
@@ -18,8 +22,10 @@ export interface VerifierConfig {
 }
 
 export class VerifierConfigError extends Error {
-  constructor(public readonly problems: string[]) {
+  readonly problems: string[];
+  constructor(problems: string[]) {
     super(`invalid verifier configuration:\n- ${problems.join("\n- ")}`);
+    this.problems = problems;
     this.name = "VerifierConfigError";
   }
 }
@@ -51,13 +57,18 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
   const provider = required("VERIFIER_PROVIDER");
   const model = required("VERIFIER_MODEL");
   const effort = env.VERIFIER_EFFORT?.trim() || undefined;
+  const llmApiKey = required("VERIFIER_LLM_API_KEY");
+  const llmBaseUrl = env.LLM_BASE_URL?.trim() || undefined;
+  if (llmBaseUrl) url(llmBaseUrl, "LLM_BASE_URL", problems);
   const secret = required("VERIFIER_SECRET_KEY");
   const facilitatorUrl = required("FACILITATOR_URL");
   const evidenceBucketUrl = required("EVIDENCE_BUCKET_URL");
   if (facilitatorUrl) url(facilitatorUrl, "FACILITATOR_URL", problems);
   if (evidenceBucketUrl) url(evidenceBucketUrl, "EVIDENCE_BUCKET_URL", problems);
   const nonDeliveryTimeoutSec = positiveInt(env.NON_DELIVERY_TIMEOUT_SEC, 300, "NON_DELIVERY_TIMEOUT_SEC", problems);
-  const port = positiveInt(env.VERIFIER_PORT, 8787, "VERIFIER_PORT", problems);
+  // Hosts such as Render inject PORT; VERIFIER_PORT wins when both are set.
+  const portVar = env.VERIFIER_PORT?.trim() ? "VERIFIER_PORT" : "PORT";
+  const port = positiveInt(env[portVar], 8787, portVar, problems);
 
   let verifierKey: Keypair | undefined;
   if (secret) {
@@ -73,6 +84,8 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
     provider,
     model,
     ...(effort ? { effort } : {}),
+    llmApiKey,
+    ...(llmBaseUrl ? { llmBaseUrl } : {}),
     verifierKey,
     facilitatorUrl,
     evidenceBucketUrl,

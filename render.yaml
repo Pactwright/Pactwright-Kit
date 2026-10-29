@@ -1,0 +1,64 @@
+# Testnet hosting for the Pactwright x402 facilitator (ROADMAP L-08, Kit#78) and verifier
+# (ROADMAP V-10, Kit#79). Secrets are `sync: false`: Render asks for them when the Blueprint is
+# created and keeps them in its secret store. Never put a value for them in this file.
+# Spec: https://render.com/docs/blueprint-spec
+projects:
+  - name: pactwright-testnet
+    environments:
+      - name: testnet
+        services:
+          # Accensa's facilitator with the `pact` scheme (accensa/x402-facilitator-stellar#651).
+          - type: web
+            name: pactwright-facilitator-testnet
+            runtime: docker
+            repo: https://github.com/accensa/x402-facilitator-stellar
+            branch: main
+            plan: 0.5c-512mb
+            healthCheckPath: /healthz
+            autoDeployTrigger: checksPass
+            envVars:
+              - key: NETWORK
+                value: stellar:testnet
+              - key: PACT_CONTRACT_ID
+                value: CDUXJJUNYFILEYHE3LITANJEKCDFERNAABOSG75OWATFVM776BCMFEV6
+              - key: TRUST_PROXY
+                value: "1"
+              # Funded testnet fee-paying signer, distinct from every buyer and seller.
+              - key: FACILITATOR_SECRET
+                sync: false
+              # Comma-separated caller keys: an open facilitator pays fees for anyone.
+              - key: FACILITATOR_API_KEYS
+                sync: false
+
+          # Witness-compatible verifier (services/verifier). main.ts refuses to start without the
+          # model, its API key and the verifier key.
+          - type: web
+            name: pactwright-verifier-testnet
+            runtime: docker
+            dockerfilePath: ./services/verifier/Dockerfile
+            dockerContext: .
+            plan: 0.5c-512mb
+            healthCheckPath: /health
+            autoDeployTrigger: checksPass
+            envVars:
+              # The key the `pact` contract is configured with (4efdaeb6…e4ff).
+              - key: VERIFIER_SECRET_KEY
+                sync: false
+              # Pinned provider and model; recorded in every envelope. No default on purpose.
+              - key: VERIFIER_PROVIDER
+                sync: false
+              - key: VERIFIER_MODEL
+                sync: false
+              - key: VERIFIER_EFFORT
+                sync: false
+              - key: VERIFIER_LLM_API_KEY
+                sync: false
+              # OpenAI-compatible base URL of the provider (optional).
+              - key: LLM_BASE_URL
+                sync: false
+              # Public URL of the facilitator service above.
+              - key: FACILITATOR_URL
+                sync: false
+              # Public-read https prefix the verifier fetches evidence from.
+              - key: EVIDENCE_BUCKET_URL
+                sync: false

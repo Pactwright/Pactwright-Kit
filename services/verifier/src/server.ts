@@ -8,6 +8,8 @@ import { z } from "zod";
 import { NotImplementedError, PactTermsSchema } from "@pactwright/core";
 import { EvidenceItemSchema, parseAnchorReference, type Keypair } from "@witness/core";
 import type { VerifierConfig } from "./config.ts";
+import { createEvidenceLoader } from "./evidence.ts";
+import { ProviderNeutralLLMAdapter } from "./models/llm.ts";
 import { runPipeline, type PipelineInput, type PipelineResult } from "./pipeline.ts";
 import { DuplicateVerdictError, MemoryVerdictStore, type VerdictStore } from "./store.ts";
 
@@ -105,8 +107,23 @@ export function createApp(deps: AppDeps): Hono {
   return app;
 }
 
-/** Starts the verifier with the in-memory store and the real pipeline. */
+/**
+ * Starts the verifier with the in-memory store and the real pipeline: the configured model and
+ * evidence fetched from the evidence bucket. Throws if the bucket can't be read over http(s).
+ */
 export function startServer(config: VerifierConfig): ReturnType<typeof serve> {
-  const app = createApp({ verifierKey: config.verifierKey, store: new MemoryVerdictStore(), pipeline: runPipeline });
+  const modelAdapter = new ProviderNeutralLLMAdapter({
+    provider: config.provider,
+    modelId: config.model,
+    apiKey: config.llmApiKey,
+    ...(config.effort ? { effort: config.effort } : {}),
+    ...(config.llmBaseUrl ? { baseUrl: config.llmBaseUrl } : {}),
+  });
+  const evidenceLoader = createEvidenceLoader(config.evidenceBucketUrl);
+  const app = createApp({
+    verifierKey: config.verifierKey,
+    store: new MemoryVerdictStore(),
+    pipeline: (input) => runPipeline(input, { verifierKey: config.verifierKey, modelAdapter, evidenceLoader }),
+  });
   return serve({ fetch: app.fetch, port: config.port });
 }

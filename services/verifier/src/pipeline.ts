@@ -352,7 +352,7 @@ export async function runPipeline(
   }
 
   // 4. Model reads evidence into structured output
-  const instructions = `Evaluate delivered evidence for condition ${JSON.stringify(terms.condition)}`;
+  const instructions = `${ruleSet.instructions ? `${ruleSet.instructions}\n\n` : ""}Evaluate delivered evidence for condition ${JSON.stringify(terms.condition)}`;
   const reading = await model.read(ruleSet.modelOutput, instructions, evidencePayloads);
 
   if (reading === "refusal") {
