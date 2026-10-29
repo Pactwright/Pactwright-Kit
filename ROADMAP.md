@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **48 / 54 tasks (89%)** |
+| Progress | **49 / 54 tasks (91%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -18,7 +18,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Foundations (this repo) | 7 | 7 | 100% |
 | Phase 3 — Kit | 18 | 17 | 94% |
 | Phase 4 — Verifier | 12 | 10 | 83% |
-| Phase 7 — v1 | 10 | 7 | 70% |
+| Phase 7 — v1 | 10 | 8 | 80% |
 | Phase 9 — v2 | 7 | 7 | 100% |
 
 ## Foundations (this repo)
@@ -83,7 +83,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 - [x] **P7-05** Verifier dispute milestones (`dispute-<n>`) within the refund window — wave · H · V-05 · FR-S6 (#73, 2026-10-29)
 - [x] **P7-06** Dispute → `RefundVault` refund flow in the seller middleware; `Refunded` receipts — wave · M · P7-05 (#73, 2026-10-29)
 - [x] **P7-07** Hono middleware — wave · M · K-06 · FR-I3 (#73, 2026-10-29)
-- [~] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 — reopened: with `KMS_KEY_ID` set it signed with a random key; it now throws unless a remote signer is supplied. No KMS client yet
+- [x] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 (#87, 2026-10-29)
 - [x] **P7-09** Evidence privacy: retention, redaction hook, disclosure text — wave · M · V-02 · FR-V10 (#73, 2026-10-29)
 - [~] **P7-12** `gate-vespi` adapter: Vespi approves the budget — wave · H · K-13, F-08 · FR-A4 — reopened: approved up to 100 USDC when Vespi was unreachable and invented funding tx IDs; now fails closed. Untested against Vespi's real API (F-08)
 - [~] **P7-13** `wallet-pollar` adapter: principal funds the agent from Pollar; answer Q1 — wave · H · K-13, F-09 · FR-A4 — reopened: returned the unsigned entry when Pollar failed; now throws. Untested against Pollar's real API (F-09)
@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #87 | P7-08 → `[x]` | Remote KMS signing for seller merchant keys: `RemoteKmsSigner` with HashiCorp Vault Transit ed25519 engine and HTTP remote endpoint integration, `DecoratedSignature` building for Stellar transaction envelopes, fail-closed security preventing fallback to local or random keys; verified with on-chain testnet refund tx `a2410a5a3536a92ae352250f963f9f5970932b26f3ef6093d4fbba34a431dadf`. (closes #83) |
 | 2026-10-29 | #86 | K-18 → `[x]` | Drop leftover `shardId` from `CertificateSchema` and ARCHITECTURE copy, add `leafInput` matching Studio's `/api/certificates/:id`. (closes #82) |
 | 2026-10-29 | real-model eval (#80) | V-12 → `[~]` | `eval/real/`: 29 labelled `document.translation` cases built from real documents (English source, translations in 8 languages, unrelated texts), run through the full pipeline with the configured model. Reports per-kind accuracy, provider, model and raw-output hashes; manual and weekly `real-model` job gates on ≥ 90%. Rule sets can now give the model reading instructions (which item is the source, how pages are marked). Not run yet: needs the model API key. |
 | 2026-10-29 | verifier deploy (#79, #78) | V-10 stays `[~]` | Verifier made deployable: `main.ts` entrypoint that refuses to start without the model, its API key or the verifier key; the server now runs the configured model and loads evidence from `EVIDENCE_BUCKET_URL` only (it used to read a placeholder instead of the evidence); the model now receives the evidence, the output schema and the effort; `PORT` fallback; removed TypeScript parameter properties that plain Node can't run; Dockerfile builds and runs `main.ts`. `render.yaml` hosts the facilitator (L-08) and verifier on Render testnet; secrets stay in Render. |
