@@ -76,8 +76,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@x402/core':
-        specifier: 2.24.0
-        version: 2.24.0
+        specifier: 2.28.0
+        version: 2.28.0
 
   examples/metered-minutes:
     dependencies:
@@ -110,8 +110,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/seller
       '@x402/core':
-        specifier: 2.24.0
-        version: 2.24.0
+        specifier: 2.28.0
+        version: 2.28.0
       express:
         specifier: ^5.0.0
         version: 5.3.0
@@ -147,8 +147,8 @@ importers:
         specifier: ^16.4.1
         version: 16.4.1
       '@x402/core':
-        specifier: 2.24.0
-        version: 2.24.0
+        specifier: 2.28.0
+        version: 2.28.0
       '@x402/stellar':
         specifier: 2.28.0
         version: 2.28.0
@@ -222,8 +222,8 @@ importers:
         specifier: ^16.4.1
         version: 16.4.1
       '@x402/core':
-        specifier: 2.24.0
-        version: 2.24.0
+        specifier: 2.28.0
+        version: 2.28.0
     devDependencies:
       '@types/express':
         specifier: ^5.0.0
@@ -701,9 +701,6 @@ packages:
 
   '@vitest/utils@4.1.12':
     resolution: {integrity: sha512-Q3awXrwOfEV+qc3WmO5ONyE0yO7Q1gQ9/oyHxGLZ/pl7N3NO/ZztqQwKLuwMkV+CA1JYSIeO3gkHnRDIo4AVaA==}
-
-  '@x402/core@2.24.0':
-    resolution: {integrity: sha512-zKFbG+RgUhBXT9RcBQZGPW1cZXL9xpiTv68XSSuO1SMoobudmVvxYgP/bhoxJuAoqJjjEceeAhT4/EcA/wolrQ==}
 
   '@x402/core@2.28.0':
     resolution: {integrity: sha512-Da/7zKxCKqpBoB4Msc9tFgkAv7tJTD8nG+DSSm+QdXAyJS4PQsmgVSKe17rDJTtlu0pwNbLcOje6MyQ6kaDkig==}
@@ -2538,10 +2535,6 @@ snapshots:
       '@vitest/pretty-format': 4.1.12
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
-
-  '@x402/core@2.24.0':
-    dependencies:
-      zod: 3.25.76
 
   '@x402/core@2.28.0':
     dependencies:

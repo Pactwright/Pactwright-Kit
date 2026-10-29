@@ -10,7 +10,7 @@
     "@pactwright/core": "workspace:*",
     "@pactwright/seller": "workspace:*",
     "express": "^5.0.0",
-    "@x402/core": "2.24.0"
+    "@x402/core": "2.28.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0"

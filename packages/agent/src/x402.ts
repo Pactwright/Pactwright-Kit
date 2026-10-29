@@ -44,7 +44,7 @@ interface PactTermsExtra {
 export class PactClientScheme implements SchemeNetworkClient {
   readonly scheme = "pact";
   /** Same asset defaults as upstream `exact` (USDC), so x402 spend controls apply unchanged. */
-  readonly findDefaultAsset = findDefaultAsset;
+  readonly findDefaultAsset: SchemeNetworkClient["findDefaultAsset"] = findDefaultAsset;
 
   constructor(
     private readonly signer: ClientStellarSigner,
