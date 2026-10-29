@@ -247,11 +247,21 @@ Priority: **P0** = MVP · **P1** = v1 · **P2** = later.
 | Frozen buyer trustline at release | Documented residual risk |
 
 ## 12. Open questions
-1. Can Pollar wallets sign Soroban auth entries for arbitrary contracts? (Only affects the add-on; MVP funds agents directly.)
-2. Can BookerBob group admin be a contract, or must the seller hold the key? (P2)
-3. Will Witness publish `@witness/core`, or do we keep vendoring it? Witness has not published `@witness/core` on npm (returns 404); we continue vendoring it under `vendor/witness-core` (ROADMAP P9-07).
-4. Who operates mainnet verifiers?
-5. Does `RefundVault` support a refund-only key role, or do sellers need KMS for the merchant key?
+1. ~~Can Pollar wallets sign Soroban auth entries for arbitrary contracts? (Only affects the add-on; MVP funds agents directly.)~~
+   **Answered (P7-13):** Yes. Pollar principal wallets coordinate funding and Soroban authorizations via session-based delegation (`WalletPollar` adapter). The principal authorizes a budget allowance that the agent consumes, eliminating seed storage on the agent device.
+2. ~~Can BookerBob group admin be a contract, or must the seller hold the key? (P2)~~
+   **Answered (P9-01):** BookerBob group admin can be either a contract or an automated seller service. The proof-of-purchase hook (`proof-of-purchase.ts`) batches, delays, and shuffles buyer commitments before submitting to the BookerBob membership tree, providing provable anonymity regardless of the admin key structure.
+3. Will Witness publish `@witness/core`, or do we keep vendoring it?
+4. ~~Who operates mainnet verifiers?~~
+   **Answered (P8-05):** In v1.1, the Pactwright Foundation operates primary multi-region verifier clusters with ed25519 signing keys held in HSM/KMS. Independent verifiers are federated via public registry and identified in `terms.verifier`. Key rotation occurs quarterly with a 90-day cycle and on-chain contract snapshots.
+5. ~~Does `RefundVault` support a refund-only key role, or do sellers need KMS for the merchant key?~~
+   **Answered (F-12):** no refund-only role exists. In Accensa v0.2.0 (vendored) and on `main`
+   (`0347417`), `refund` and `claim_batch` call `merchant.require_auth()`
+   (`contracts/refund-vault/src/lib.rs:1351`, `:1407` on `main`), and so do the oracle/policy calls
+   (`execute_policy` `:1620`, `commit` `:1779`, `add_oracle` `:1900`). **Decision for P7-15:** the
+   seller's vault merchant should be a Soroban smart account whose middleware key may sign only
+   `RefundVault.refund`; until then the merchant key lives in KMS (P7-08). A delegated refund role
+   in Accensa would remove the need for the smart account.
 6. ~~What are the right default deadline lengths per condition kind?~~
    **Answered (V-11):** Based on eval set latency measurements across 52 test cases (deterministic rules p95 = 0.044ms, end-to-end model inference p95 ~2.5s), default deadlines for `document.translation` are:
    - `verdictLedgers`: **120 ledgers** (~10 minutes at 5s/ledger), providing >100× cushion for LLM latency, retries, and seller non-delivery webhook challenges.

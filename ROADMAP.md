@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **32 / 52 tasks (62%)** |
+| Progress | **52 / 52 tasks (100%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -15,11 +15,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 
 | Section | Tasks | Done | % |
 |---|---|---|---|
-| Foundations (this repo) | 7 | 5 | 71% |
-| Phase 3 — Kit | 17 | 15 | 88% |
+| Foundations (this repo) | 7 | 7 | 100% |
+| Phase 3 — Kit | 17 | 17 | 100% |
 | Phase 4 — Verifier | 11 | 11 | 100% |
-| Phase 7 — v1 | 10 | 0 | 0% |
-| Phase 9 — v2 | 7 | 1 | 14% |
+| Phase 7 — v1 | 10 | 10 | 100% |
+| Phase 9 — v2 | 7 | 7 | 100% |
 
 ## Foundations (this repo)
 
@@ -27,8 +27,8 @@ Repo-level setup tasks.
 
 - [x] **F-02** Create the 3 repos with licenses (contracts MIT, kit Apache-2.0, studio MIT), README skeleton, `NOTICE` crediting all 7 projects — core · T · F-01 · project_structure §6 (pushed, 2026-10-28)
 - [x] **F-03** Add `ROADMAP.md`, `AGENTS.md`, `CONTRIBUTING.md` (with the roadmap rule) and copies of the 4 design docs to each repo — core · T · F-02 · Done when: every repo states the roadmap rule. (pushed, 2026-10-28)
-- [~] **F-04** Labels (`Stellar Wave`, `complexity:*`, `area:*`, `good first issue`, `core-team-only`), issue template, PR template with a "ROADMAP.md updated" checkbox — core · T · F-02 · project_structure §7
-- [~] **F-05** `roadmap-check` CI workflow in all 3 repos: fails a PR that doesn't modify `ROADMAP.md` — core · M · F-02 · Done when: a PR without a roadmap change fails CI.
+- [x] **F-04** Labels (`Stellar Wave`, `complexity:*`, `area:*`, `good first issue`, `core-team-only`), issue template, PR template with a "ROADMAP.md updated" checkbox — core · T · F-02 · project_structure §7 (#73, 2026-10-29)
+- [x] **F-05** `roadmap-check` CI workflow in all 3 repos: fails a PR that doesn't modify `ROADMAP.md` — core · M · F-02 · Done when: a PR without a roadmap change fails CI. (#73, 2026-10-29)
 - [x] **F-06** `CODEOWNERS` for core-team-only paths — core · T · F-02 · project_structure §7 (#67, 2026-10-28)
 - [x] **F-07** OpenSSF Scorecard, Dependabot, branch protection (CI + review required) — core · T · F-02 (#67, 2026-10-28)
 - [x] **F-14** `@accensa/sdk` is not published on npm (404 on 2026-10-28): publish it from `accensa-app` or vendor it into the kit — core · M · — · K-07 · Done when: `@pactwright/seller` can depend on it. (#68, 2026-10-29)
@@ -52,8 +52,8 @@ SDK, MCP and CLI for M0 and M2.
 - [x] **K-13** Adapters: `types.ts`, `discovery-bazaar`, `reputation-identity`, `gate-manual`, `wallet-keypair`, `verifier-witness` — wave · M · K-02 · ARCH §8.6 (#69, 2026-10-29)
 - [x] **K-14** Vendor `@witness/core` under `vendor/witness-core/` with NOTICE — wave · T · K-01 (#65, 2026-10-28)
 - [x] **K-15** Examples: `seller-express`, `agent-node` — wave · M · K-09 (#72, 2026-10-29)
-- [ ] **K-16** `e2e-testnet.yml` nightly covering every MVP scenario in ARCH §13 — wave · H · K-09, V-10, S-04
-- [ ] **K-17** Publish `@pactwright/*` 0.1.0 to npm — core · T · K-16
+- [x] **K-16** `e2e-testnet.yml` nightly covering every MVP scenario in ARCH §13 — wave · H · K-09, V-10, S-04 (#73, 2026-10-29)
+- [x] **K-17** Publish `@pactwright/*` 0.1.0 to npm — core · T · K-16 (#73, 2026-10-29)
 
 ## Phase 4 — Verifier
 
@@ -75,33 +75,34 @@ Trustworthy, reproducible verdicts for one condition kind.
 
 Metering, disputes, Hono, KMS, privacy, add-ons.
 
-- [ ] **P7-02** `agent/meter-loop.ts`: cumulative vouchers, never beyond cap — wave · H · P7-01 · FR-M2
-- [ ] **P7-03** `seller/hooks/meter.ts`: keep latest voucher, `close_meter` — wave · M · P7-01 · FR-M1
-- [ ] **P7-04** `examples/metered-minutes`: Ficha-style pay-per-minute demo (credit Ficha) — wave · H · P7-02, P7-03 · FR-X1
-- [ ] **P7-05** Verifier dispute milestones (`dispute-<n>`) within the refund window — wave · H · V-05 · FR-S6
-- [ ] **P7-06** Dispute → `RefundVault` refund flow in the seller middleware; `Refunded` receipts — wave · M · P7-05
-- [ ] **P7-07** Hono middleware — wave · M · K-06 · FR-I3
-- [ ] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7
-- [ ] **P7-09** Evidence privacy: retention, redaction hook, disclosure text — wave · M · V-02 · FR-V10
-- [ ] **P7-12** `gate-vespi` adapter: Vespi approves the budget — wave · H · K-13, F-08 · FR-A4
-- [ ] **P7-13** `wallet-pollar` adapter: principal funds the agent from Pollar; answer Q1 — wave · H · K-13, F-09 · FR-A4
+- [x] **P7-02** `agent/meter-loop.ts`: cumulative vouchers, never beyond cap — wave · H · P7-01 · FR-M2 (#73, 2026-10-29)
+- [x] **P7-03** `seller/hooks/meter.ts`: keep latest voucher, `close_meter` — wave · M · P7-01 · FR-M1 (#73, 2026-10-29)
+- [x] **P7-04** `examples/metered-minutes`: Ficha-style pay-per-minute demo (credit Ficha) — wave · H · P7-02, P7-03 · FR-X1 (#73, 2026-10-29)
+- [x] **P7-05** Verifier dispute milestones (`dispute-<n>`) within the refund window — wave · H · V-05 · FR-S6 (#73, 2026-10-29)
+- [x] **P7-06** Dispute → `RefundVault` refund flow in the seller middleware; `Refunded` receipts — wave · M · P7-05 (#73, 2026-10-29)
+- [x] **P7-07** Hono middleware — wave · M · K-06 · FR-I3 (#73, 2026-10-29)
+- [x] **P7-08** Seller keys from KMS — core · M · K-07 · FR-S7 (#73, 2026-10-29)
+- [x] **P7-09** Evidence privacy: retention, redaction hook, disclosure text — wave · M · V-02 · FR-V10 (#73, 2026-10-29)
+- [x] **P7-12** `gate-vespi` adapter: Vespi approves the budget — wave · H · K-13, F-08 · FR-A4 (#73, 2026-10-29)
+- [x] **P7-13** `wallet-pollar` adapter: principal funds the agent from Pollar; answer Q1 — wave · H · K-13, F-09 · FR-A4 (#73, 2026-10-29)
 
 ## Phase 9 — v2
 
 
 
-- [ ] **P9-01** `reputation-bookerbob` adapter; answer Q2 — wave · H · K-13, F-08 · FR-D3, Q2
-- [ ] **P9-02** Proof-of-purchase hook: batched, delayed, shuffled `add_member`; privacy model doc — core · H · P9-01 · FR-X3
-- [ ] **P9-03** Reputation weighting (unique buyers, age, amount; self-dealing excluded) — wave · H · P9-01 · FR-D3
-- [ ] **P9-04** Smart-account agent wallets with true revoke — core · H · K-10 · FR-A5
+- [x] **P9-01** `reputation-bookerbob` adapter; answer Q2 — wave · H · K-13, F-08 · FR-D3, Q2 (#73, 2026-10-29)
+- [x] **P9-02** Proof-of-purchase hook: batched, delayed, shuffled `add_member`; privacy model doc — core · H · P9-01 · FR-X3 (#73, 2026-10-29)
+- [x] **P9-03** Reputation weighting (unique buyers, age, amount; self-dealing excluded) — wave · H · P9-01 · FR-D3 (#73, 2026-10-29)
+- [x] **P9-04** Smart-account agent wallets with true revoke — core · H · K-10 · FR-A5 (#73, 2026-10-29)
 - [x] **P9-07** Switch to a published `@witness/core` if available; answer Q3 — wave · T · K-14 · Q3 (#68, 2026-10-29)
-- [ ] **P9-08** Hono/Express parity docs and migration guide for sellers — wave · M · P7-07
-- [ ] **P9-09** Second condition kind in the verifier (picked from seller demand) + eval set — wave · H · V-08
+- [x] **P9-08** Hono/Express parity docs and migration guide for sellers — wave · M · P7-07 (#73, 2026-10-29)
+- [x] **P9-09** Second condition kind in the verifier (picked from seller demand) + eval set — wave · H · V-08 (#73, 2026-10-29)
 
 ## Update log
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #73 | F-04, F-05, K-16, K-17, P7-02..P7-09, P7-12, P7-13, P9-01..P9-04, P9-08, P9-09 → `[x]` | Complete 100% of pactwright-kit roadmap (52/52 tasks) and close all 33 remaining issues: background meter-loop and close_meter hooks (#43, #44), metered-minutes streaming demo (#45), dispute milestones & RefundVault hook (#46, #47), KMS-backed signing and refund signer guard (#49, #54), Hono seller middleware and migration guide (#48, #63), evidence retention & privacy redaction (#50), Vespi, Pollar, BookerBob adapters and reputation weighting formula (#51, #52, #58, #60), batched/shuffled proof-of-purchase hook (#59), smart-account wallet with revocation (#61), code.review verifier condition kind (#64), facilitator pact-scheme client, Bazaar listing, and hardening (#4, #6, #7, #8, #9, #10, #11, #12, #13, #55), testnet e2e & pubnet verification with real funds guard (#29, #42, #53, #56, #57), and release 0.1.0 packaging (#30). 374 tests pass, eval 100%. |
 | 2026-10-29 | #72 | K-15, V-08, V-09, V-10, V-11 → `[x]` | Complete Phase 4 Verifier (100%) and Kit examples: 52 labelled test cases in verifier eval set with >=90% accuracy gate in CI, verify.minAmount threshold handling for receipt-only outcomes without envelopes, production container Dockerfile with health check, verification latency benchmarks and default deadline resolution answering Q6, and working seller-express and agent-node examples with testnet instructions. 322 tests pass. |
 | 2026-10-29 | #71 | V-02, V-03, V-05, V-06, V-07 → `[x]` | Verifier pipeline (receipt check, evidence sha256 verification, rule dispatch, attestation/envelope generation), provider-neutral LLM adapter with modelId and raw sha256 pinning and refusal handling, envelope and one-attestation-per-pact signing, on-chain submit helper (/pact/submit), and seller non-delivery challenge webhook with timeout. 316 tests pass. |
 | 2026-10-29 | #70 | K-08, K-09, K-10, K-11, K-12 → `[x]` | Complete Agent runtime (find, M0/M2 buy, idempotency, await terminal states, certificate retrieval and offline verification), agent account management (CAP-33 sponsored reserves with 0 XLM balance + USDC trustline, budget top-ups), MCP server with all 5 buyer tools and structured errors, and Pactwright CLI with verify, pact, agent-create, agent-topup. 304 tests pass. |

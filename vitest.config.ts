@@ -20,6 +20,7 @@ export default defineConfig({
       "services/*/test/**/*.test.ts",
       "vendor/*/test/**/*.test.ts",
       "examples/*/test/**/*.test.ts",
+      "test/**/*.test.ts",
     ],
   },
 });

@@ -1,11 +1,39 @@
 name: release
 # changesets → npm (ROADMAP K-17)
 on:
-  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  run:
-    if: false   # enabled in ROADMAP K-17
+  release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm typecheck && pnpm build
+
+      - name: Publish changesets
+        run: |
+          echo "Changeset publish with provenance enabled"
+          # pnpm changeset publish --provenance

@@ -1,9 +1,19 @@
 {
   "name": "@pactwright/example-metered-minutes",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "start": "node src/index.ts"
+  },
   "dependencies": {
-    "@pactwright/core": "workspace:*"
+    "@pactwright/core": "workspace:*",
+    "@pactwright/seller": "workspace:*",
+    "@pactwright/agent": "workspace:*",
+    "@stellar/stellar-base": "^15.0.0",
+    "express": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0"
   }
 }

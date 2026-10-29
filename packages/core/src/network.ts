@@ -62,6 +62,10 @@ export function loadNetworkConfig(env: NodeJS.ProcessEnv): NetworkConfig {
   if ((network === "testnet" || network === "pubnet") && passphrase && passphrase !== PASSPHRASES[network]) {
     problems.push(`STELLAR_NETWORK_PASSPHRASE does not match STELLAR_NETWORK=${network}`);
   }
+  // Pubnet guard (P7-14, ARCH §12)
+  if (network === "pubnet" && env.PUBNET_CONFIRM_REAL_FUNDS !== "true") {
+    problems.push('PUBNET_CONFIRM_REAL_FUNDS must be "true" when running on pubnet');
+  }
   for (const [name, value] of [["STELLAR_RPC_URL", rpcUrl], ["FACILITATOR_URL", facilitatorUrl]] as const) {
     if (value && !isUrl(value)) problems.push(`${name} is not an http(s) URL`);
   }

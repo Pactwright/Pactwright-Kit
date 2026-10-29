@@ -61,7 +61,7 @@ export async function handleM0Refund(
   // Determine refund amount
   let refundAmount = "0";
   if (verdict === "deny") {
-    refundAmount = fromStroops(toStroops(price));
+    refundAmount = allowedAmount ? calculateRefundAmount(price, allowedAmount) : fromStroops(toStroops(price));
   } else if (verdict === "allow") {
     refundAmount = calculateRefundAmount(price, allowedAmount);
   }

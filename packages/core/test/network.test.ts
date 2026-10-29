@@ -41,4 +41,17 @@ describe("loadNetworkConfig", () => {
       expect(problems.join("\n")).toMatch(/USDC_SAC_ID is not a Stellar address/);
     }
   });
+
+  it("requires PUBNET_CONFIRM_REAL_FUNDS=true on pubnet", () => {
+    const pubnetBase = {
+      ...valid,
+      STELLAR_NETWORK: "pubnet",
+      STELLAR_NETWORK_PASSPHRASE: PASSPHRASES.pubnet,
+      STELLAR_RPC_URL: "https://horizon.stellar.org",
+    };
+    expect(() => loadNetworkConfig(pubnetBase)).toThrow(/PUBNET_CONFIRM_REAL_FUNDS/);
+    expect(
+      loadNetworkConfig({ ...pubnetBase, PUBNET_CONFIRM_REAL_FUNDS: "true" }).network,
+    ).toBe("pubnet");
+  });
 });
