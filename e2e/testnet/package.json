@@ -9,6 +9,12 @@
     "@pactwright/core": "workspace:*",
     "@pactwright/seller": "workspace:*",
     "@pactwright/verifier": "workspace:*",
-    "@stellar/stellar-sdk": "^16.4.1"
+    "@stellar/stellar-sdk": "^16.4.1",
+    "@pactwright/agent": "workspace:*",
+    "@pactwright/adapters": "workspace:*",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0"
   }
 }

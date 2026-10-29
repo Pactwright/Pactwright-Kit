@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: "@pactwright/verifier", replacement: resolve(root, "services/verifier/src/index.ts") },
+      { find: "@pactwright/contracts-client/submit", replacement: resolve(root, "packages/contracts-client/src/submit.ts") },
       { find: /^@pactwright\/(.*)$/, replacement: resolve(root, "packages/$1/src/index.ts") },
       { find: "@witness/core", replacement: resolve(root, "vendor/witness-core/src/index.ts") },
       { find: "@accensa/sdk", replacement: resolve(root, "vendor/accensa-sdk/src/index.ts") },

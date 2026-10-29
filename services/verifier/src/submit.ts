@@ -1,63 +1,35 @@
-/** Submits record_verdict / release through the facilitator's /pact/submit. ROADMAP V-06. */
-import type { VerdictAttestation } from "@pactwright/core";
+/**
+ * Sends `record_verdict` / `release` through the facilitator's `POST /pact/submit`, which pays
+ * the fee (accensa/x402-facilitator-stellar, docs/scheme_pact_stellar.md §6). ROADMAP V-06.
+ * Neither call needs anyone's authorization: the verdict carries the verifier's signature.
+ */
+import { verdictAttestationScVal, type VerdictAttestation } from "@pactwright/core";
+import { xdr } from "@stellar/stellar-base";
+import { submitPactCall, type PactSubmitOptions } from "@pactwright/contracts-client/submit";
 
-export interface SubmitOptions {
-  facilitatorUrl?: string;
-  apiKey?: string;
-  fetchImpl?: typeof fetch;
+export interface SubmitOptions extends Omit<PactSubmitOptions, "signer"> {
+  /** Required for `record_verdict`. */
   attestation?: VerdictAttestation;
+  /** Base64 ed25519 signature over the attestation message. Required for `record_verdict`. */
   signature?: string;
 }
 
-export async function submit(
-  pactId: string,
-  call: "record_verdict" | "release",
-  options?: SubmitOptions,
-): Promise<string> {
-  const facilitatorBase = (options?.facilitatorUrl ?? process.env.FACILITATOR_URL ?? "https://facilitator.pactwright.dev").replace(/\/$/, "");
-  const url = `${facilitatorBase}/pact/submit`;
-  const doFetch = options?.fetchImpl ?? globalThis.fetch;
-
-  const payload = {
-    pactId,
-    call,
-    attestation: options?.attestation,
-    signature: options?.signature,
-  };
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  const key = options?.apiKey ?? process.env.FACILITATOR_API_KEY;
-  if (key) {
-    headers["Authorization"] = `Bearer ${key}`;
+/** Returns the transaction hash. */
+export async function submit(pactId: string, call: "record_verdict" | "release", options: SubmitOptions): Promise<string> {
+  const id = xdr.ScVal.scvBytes(Buffer.from(pactId, "hex"));
+  let args: xdr.ScVal[];
+  if (call === "record_verdict") {
+    if (!options.attestation || !options.signature) throw new Error("record_verdict needs the attestation and its signature");
+    if (options.attestation.pactId.toLowerCase() !== pactId.toLowerCase()) throw new Error("attestation is for another pact");
+    args = [id, verdictAttestationScVal(options.attestation), xdr.ScVal.scvBytes(Buffer.from(options.signature, "base64"))];
+  } else {
+    args = [id];
   }
-
-  let res: Response;
+  const { attestation: _a, signature: _s, ...pactOptions } = options;
   try {
-    res = await doFetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
+    return (await submitPactCall(call, args, pactOptions)).transaction;
   } catch (err) {
-    console.error(`[submit] Network failure submitting ${call} for pact ${pactId}: ${String(err)}`);
-    throw new Error(`Failed to submit ${call} for pact ${pactId}: ${String(err)}`);
+    console.error(`[submit] ${call} for pact ${pactId} failed: ${err instanceof Error ? err.message : String(err)}`);
+    throw err;
   }
-
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => "");
-    console.error(`[submit] Failed submitting ${call} for pact ${pactId} HTTP ${res.status}: ${errorBody}`);
-    throw new Error(`Facilitator /pact/submit failed for pact ${pactId} with HTTP ${res.status}`);
-  }
-
-  interface SubmitResponse {
-    txHash?: string;
-    tx?: string;
-  }
-
-  const data = (await res.json().catch(() => ({}))) as SubmitResponse;
-  const txHash = data.txHash ?? data.tx;
-  if (!txHash) throw new Error(`Facilitator accepted ${call} for pact ${pactId} but returned no transaction hash`);
-  return txHash;
 }

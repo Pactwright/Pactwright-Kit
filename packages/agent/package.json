@@ -15,10 +15,12 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@pactwright/core": "workspace:*",
     "@pactwright/adapters": "workspace:*",
+    "@pactwright/core": "workspace:*",
     "@stellar/stellar-base": "^15.0.0",
-    "@stellar/stellar-sdk": "^16.4.1"
+    "@stellar/stellar-sdk": "^16.4.1",
+    "@x402/core": "2.24.0",
+    "@x402/stellar": "2.28.0"
   },
   "files": [
     "dist"

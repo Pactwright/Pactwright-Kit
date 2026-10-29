@@ -9,6 +9,7 @@
   "dependencies": {
     "@pactwright/core": "workspace:*",
     "@pactwright/agent": "workspace:*",
-    "@pactwright/adapters": "workspace:*"
+    "@pactwright/adapters": "workspace:*",
+    "@x402/core": "2.24.0"
   }
 }

@@ -9,6 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   resolve: {
     alias: [
+      { find: "@pactwright/contracts-client/submit", replacement: resolve(__dirname, "packages/contracts-client/src/submit.ts") },
       { find: /^@pactwright\/(.*)$/, replacement: resolve(__dirname, "packages/$1/src/index.ts") },
       { find: "@witness/core", replacement: resolve(__dirname, "vendor/witness-core/src/index.ts") },
       { find: "@accensa/sdk", replacement: resolve(__dirname, "vendor/accensa-sdk/src/index.ts") },

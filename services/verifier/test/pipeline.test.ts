@@ -339,36 +339,22 @@ describe("Verifier Engine Pipeline", () => {
   });
 
   describe("V-06: Facilitator /pact/submit", () => {
-    it("submits record_verdict and returns txHash idempotently", async () => {
-      const mockFetch = vi.fn<typeof fetch>(async () =>
-        new Response(JSON.stringify({ txHash: "tx_mock_hash_12345" }), { status: 200 }),
-      );
+    const base = {
+      facilitatorUrl: "https://facilitator.example",
+      network: "stellar:testnet" as const,
+      rpcUrl: "https://rpc.example",
+      pactContractId: "CDUXJJUNYFILEYHE3LITANJEKCDFERNAABOSG75OWATFVM776BCMFEV6",
+    };
 
-      const tx = await submit("01".repeat(32), "record_verdict", {
-        facilitatorUrl: "https://mock.facilitator.dev",
-        fetchImpl: mockFetch,
-      });
-
-      expect(tx).toBe("tx_mock_hash_12345");
-      expect(mockFetch).toHaveBeenCalledOnce();
+    it("refuses record_verdict without the attestation and its signature", async () => {
+      await expect(submit("01".repeat(32), "record_verdict", base)).rejects.toThrow(/attestation/);
     });
 
-    it("logs failure with pact_id on submission error", async () => {
-      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      const mockFetch = vi.fn<typeof fetch>(async () =>
-        new Response("Facilitator rate limit exceeded", { status: 429 }),
-      );
-
-      await expect(
-        submit("01".repeat(32), "release", {
-          facilitatorUrl: "https://mock.facilitator.dev",
-          fetchImpl: mockFetch,
-        }),
-      ).rejects.toThrow("Facilitator /pact/submit failed");
-
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+    it("refuses an attestation for another pact", async () => {
+      const attestation = { pactId: "02".repeat(32), conditionHash: "03".repeat(32), envelopeHash: "04".repeat(32), verdict: "ALLOW" as const, amount: "1", issuedLedger: 1 };
+      await expect(submit("01".repeat(32), "record_verdict", { ...base, attestation, signature: "AA==" })).rejects.toThrow(/another pact/);
     });
+    // The real submission runs on testnet in e2e/testnet (x402 M2 scenario).
   });
 
   describe("V-07: Non-delivery challenge", () => {

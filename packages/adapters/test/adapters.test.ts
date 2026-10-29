@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { Keypair } from "@pactwright/core";
+import { Address, hash, xdr } from "@stellar/stellar-base";
 import { signEnvelope, type UnsignedEnvelope } from "@witness/core";
 import {
   DiscoveryBazaar,
@@ -134,17 +135,34 @@ describe("WalletKeypair", () => {
     expect(wallet2.address()).toBe(expected);
   });
 
-  it("signs auth entry payload and returns signature", async () => {
-    const seed = "05".repeat(32);
-    const wallet = new WalletKeypair(seed);
-    const signature = await wallet.signAuthEntry("sample_auth_payload");
-    expect(typeof signature).toBe("string");
-    expect(signature.length).toBeGreaterThan(0);
-
-    const kp = wallet.getKeypair();
-    const verified = kp.verify(Buffer.from("sample_auth_payload"), Buffer.from(signature, "base64"));
-    expect(verified).toBe(true);
+  it("signs a Soroban authorization preimage the way the network verifies it (SEP-43)", async () => {
+    const wallet = new WalletKeypair("05".repeat(32));
+    const preimage = xdr.HashIdPreimage.envelopeTypeSorobanAuthorization(
+      new xdr.HashIdPreimageSorobanAuthorization({
+        networkId: hash(Buffer.from("Test SDF Network ; September 2015")),
+        nonce: xdr.Int64.fromString("7"),
+        signatureExpirationLedger: 100,
+        invocation: new xdr.SorobanAuthorizedInvocation({
+          function: xdr.SorobanAuthorizedFunction.sorobanAuthorizedFunctionTypeContractFn(
+            new xdr.InvokeContractArgs({
+              contractAddress: Address.fromString("CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA").toScAddress(),
+              functionName: "transfer",
+              args: [],
+            }),
+          ),
+          subInvocations: [],
+        }),
+      }),
+    );
+    const signature = await wallet.signAuthEntry(preimage.toXDR("base64"));
+    expect(wallet.getKeypair().verify(hash(preimage.toXDR()), Buffer.from(signature, "base64"))).toBe(true);
   });
+
+  it("refuses to sign anything that isn't a Soroban authorization preimage", async () => {
+    const wallet = new WalletKeypair("05".repeat(32));
+    await expect(wallet.signAuthEntry("sample_auth_payload")).rejects.toThrow(/preimage/);
+  });
+
 });
 
 describe("VerifierWitness", () => {

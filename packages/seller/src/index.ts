@@ -1,7 +1,8 @@
 export { pact, isPactTerminal, markPactTerminal, clearTerminalPacts } from "./express.ts";
 export { pactHono } from "./hono.ts";
 export type { PactRouteOptions, SellerConfig } from "./pact.ts";
-export { resolveSellerConfig, DEFAULT_DEADLINES, DEFAULT_DEADLINES_BY_KIND, resolveDeadlines } from "./pact.ts";
+export { resolveSellerConfig, SellerConfigError, DEFAULT_DEADLINES, DEFAULT_DEADLINES_BY_KIND, resolveDeadlines, type ResolvedSellerConfig } from "./pact.ts";
+export { processPayment, facilitatorFor, PAYMENT_HEADERS, NONCE_HEADER, type PaywallOutcome, type PaywallRequest } from "./paywall.ts";
 export { buildPaymentRequired, type PaymentRequired } from "./payment-required.ts";
 export { DELIVERY_HEADER, signDelivery, parseDeliveryHeader } from "./delivery.ts";
 export { runStartupChecks, type StartupCheckOptions } from "./startup-checks.ts";

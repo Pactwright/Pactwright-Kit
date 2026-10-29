@@ -65,24 +65,12 @@ describe("Scenario logic, offline (ARCHITECTURE §13)", () => {
     expect(parseFloat(refundRes.refundAmount)).toBe(0.5);
   });
 
-  // Scenario 4: M2 ALLOW
-  it("Scenario 4: M2 ALLOW - verifier allowance triggers auto-settle", async () => {
-    const pactId = "40".repeat(32);
-    const mockFetch: typeof fetch = async () => {
-      return new Response(JSON.stringify({ txHash: "tx_mock_m2_allow" }), { status: 200 });
-    };
-
-    const settleRes = await handleAutoSettle(
-      {
-        pactId,
-        verdict: "allow",
-        allowedAmount: "1.00",
-      },
-      { fetchImpl: mockFetch, facilitatorUrl: "https://facilitator.example" },
-    );
-
-    expect(settleRes.settled).toBe(true);
-    expect(settleRes.txHash).toBe("tx_mock_m2_allow");
+  // Scenario 4: M2 ALLOW: settling needs either chain access or the facilitator plus the seller's
+  // signer; the on-chain settle runs in e2e/testnet.
+  it("Scenario 4: M2 ALLOW - auto-settle refuses to run without a way to submit", async () => {
+    await expect(
+      handleAutoSettle({ pactId: "40".repeat(32), verdict: "allow", allowedAmount: "1.00" }, {}),
+    ).rejects.toThrow(/chain or facilitator/);
   });
 
   // Scenario 5: M2 DENY

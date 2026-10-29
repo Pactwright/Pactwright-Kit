@@ -39,7 +39,6 @@ node examples/agent-node/src/index.ts
 
 The buyer agent requests the protected endpoint, processes the 402 challenge, pays through the configured payment provider, checks the returned delivery receipt, and prints the pact summary.
 
-> **Payment provider required.** `buy` refuses to run without one, so it never sends a payment
-> header that pays nothing. The built-in x402 payment (a signed USDC transfer for M0, a signed
-> `pact.open` for M2) is ROADMAP K-08 / K-09. Until then, pass your own `payment` to
-> `runAgentBuyer`. For real testnet transactions today, see `e2e/testnet`.
+> **Payments.** By default `buy` pays with the agent's wallet over x402: a signed USDC transfer
+> for M0 (`exact`) or a signed `pact.open` for M2 (`pact`). The agent signs only auth entries; the
+> seller's facilitator pays the fee. Pass `payment` to `runAgentBuyer` to use your own provider.
