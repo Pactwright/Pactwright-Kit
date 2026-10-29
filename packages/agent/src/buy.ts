@@ -18,7 +18,27 @@ export interface Pact {
   body: Uint8Array;
   /** Raw X-Pactwright-Delivery header. */
   deliveryReceipt?: string;
-  paymentTx: string;
+  /** Hash of the settled payment (M0 transfer or M2 `open`), when the provider or seller reports it. */
+  paymentTx?: string;
+}
+
+/** What a payment provider is asked to pay. */
+export interface PaymentRequest {
+  mode: "exact-refund" | "escrow";
+  pactId: string;
+  buyer: string;
+  seller: string;
+  amount: string;
+  nonce: bigint;
+  conditionHash: string;
+}
+
+/**
+ * Builds the x402 payment: a signed USDC transfer (M0) or a signed `pact.open` (M2). It must
+ * produce something a facilitator can verify and settle on-chain (ROADMAP K-08, K-09).
+ */
+export interface PaymentProvider {
+  pay(request: PaymentRequest): Promise<{ header: string; paymentTx?: string }>;
 }
 
 export async function buy(
@@ -42,31 +62,23 @@ export async function buy(
   const seller = listing.seller;
   const pId = pactId(buyer, seller, nonce, condHash);
 
-  let paymentHeader: string;
-  let paymentTx: string;
-
-  if (listing.mode === "exact-refund") {
-    paymentTx = gateRes.fundingTx ?? `tx_m0_${pId.slice(0, 16)}`;
-    const payload = {
-      scheme: "exact",
-      tx: paymentTx,
-      pact_id: pId,
-    };
-    paymentHeader = Buffer.from(JSON.stringify(payload)).toString("base64");
-  } else if (listing.mode === "escrow") {
-    const authPayload = `pact_open:${pId}:${listing.price}`;
-    const authEntry = await config.wallet.signAuthEntry(authPayload);
-    paymentTx = gateRes.fundingTx ?? `tx_m2_${pId.slice(0, 16)}`;
-    const payload = {
-      scheme: "pact",
-      authEntry,
-      pact_id: pId,
-      tx: paymentTx,
-    };
-    paymentHeader = Buffer.from(JSON.stringify(payload)).toString("base64");
-  } else {
+  // No payment provider, no purchase: never send a payment header that pays nothing.
+  if (!config.payment) {
+    throw new Error("agent buy needs a payment provider (config.payment): see ROADMAP K-08 / K-09");
+  }
+  if (listing.mode !== "exact-refund" && listing.mode !== "escrow") {
     throw new Error(`Unsupported mode: ${(listing as { mode: string }).mode}`);
   }
+  const payment = await config.payment.pay({
+    mode: listing.mode,
+    pactId: pId,
+    buyer,
+    seller,
+    amount: listing.price,
+    nonce,
+    conditionHash: condHash,
+  });
+  const paymentHeader = payment.header;
 
   const doFetch = options.fetchImpl ?? config.fetchImpl ?? globalThis.fetch;
   const method = options.request?.method ?? "POST";
@@ -94,6 +106,7 @@ export async function buy(
 
   const bodyBytes = new Uint8Array(await res.arrayBuffer());
   const deliveryReceipt = res.headers.get("x-pactwright-delivery") ?? undefined;
+  const paymentTx = payment.paymentTx ?? settledTx(res.headers.get("x-payment-response"));
 
   const terms: PactTerms = {
     pactId: pId,
@@ -117,6 +130,17 @@ export async function buy(
     terms,
     body: bodyBytes,
     deliveryReceipt,
-    paymentTx,
+    ...(paymentTx ? { paymentTx } : {}),
   };
+}
+
+/** x402 `X-Payment-Response`: base64 JSON whose `transaction` is the settled payment's hash. */
+function settledTx(header: string | null): string | undefined {
+  if (!header) return undefined;
+  try {
+    const decoded = JSON.parse(Buffer.from(header, "base64").toString("utf8")) as { transaction?: unknown };
+    return typeof decoded.transaction === "string" && /^[0-9a-f]{64}$/i.test(decoded.transaction) ? decoded.transaction : undefined;
+  } catch {
+    return undefined;
+  }
 }

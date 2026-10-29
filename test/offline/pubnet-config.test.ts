@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Keypair, PASSPHRASES, loadNetworkConfig } from "@pactwright/core";
 
-describe("Pubnet E2E Readiness (P8-07)", () => {
+describe("Pubnet configuration, offline", () => {
   const pubnetEnv = {
     STELLAR_NETWORK: "pubnet",
     STELLAR_NETWORK_PASSPHRASE: PASSPHRASES.pubnet,

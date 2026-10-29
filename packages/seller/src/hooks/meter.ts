@@ -119,11 +119,15 @@ export class MeterHook {
       }
 
       const data = (await res.json()) as { tx_hash?: string; hash?: string };
+      const txHash = data.tx_hash ?? data.hash;
+      if (!txHash) {
+        return { closed: false, pactId, units: latest.units, error: "Facilitator returned no transaction hash for close_meter" };
+      }
       return {
         closed: true,
         pactId,
         units: latest.units,
-        txHash: data.tx_hash ?? data.hash ?? "tx_meter_closed",
+        txHash,
       };
     } catch (err: unknown) {
       return {

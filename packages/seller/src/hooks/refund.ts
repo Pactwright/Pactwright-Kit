@@ -1,5 +1,6 @@
 /** M0: RefundVault.refund on DENY or partial delivery (seller-cooperative). ROADMAP K-07. */
 import { toStroops, fromStroops } from "@pactwright/core";
+import { invokeContract, scv, type ChainOptions, type SubmittedCall } from "../chain.ts";
 
 export interface M0VerdictNotification {
   pactId: string;
@@ -10,18 +11,30 @@ export interface M0VerdictNotification {
   paidAtLedger?: number;
 }
 
+/** The `RefundVault.refund` call, as sent on-chain. */
+export interface RefundCall {
+  refundVaultId: string;
+  paymentRef: string;
+  recipient: string;
+  amountStroops: bigint;
+  paidAtLedger: number;
+}
+
 export interface RefundOptions {
   refundVaultId?: string;
-  sellerSecret?: string;
-  rpcUrl?: string;
-  fetchImpl?: typeof fetch;
+  /** Sends the refund as a real transaction signed by the vault merchant (the seller). */
+  chain?: ChainOptions;
+  /** Replaces the chain submission, for tests or custom signing pipelines. */
+  submit?: (call: RefundCall) => Promise<SubmittedCall>;
 }
 
 export interface RefundResult {
+  /** True only when a refund transaction landed on-chain. */
   refunded: boolean;
   refundAmount: string;
   paymentRef: string;
   txHash?: string;
+  ledger?: number;
   error?: string;
 }
 
@@ -87,34 +100,32 @@ export async function handleM0Refund(
   }
 
   const refundVaultId = options?.refundVaultId ?? process.env.SELLER_REFUND_VAULT_ID;
-  const doFetch = options?.fetchImpl ?? globalThis.fetch;
-
-  // Mock / invoke the RefundVault contract call
-  // RefundVault.refund(payment_ref = pact_id, recipient = buyer, amount, paid_at_ledger)
-  if (options?.rpcUrl && typeof doFetch === "function") {
-    const res = await doFetch(options.rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "sendTransaction",
-        params: {
-          contract: refundVaultId,
-          method: "refund",
-          args: {
-            payment_ref: pactId,
-            recipient: buyer,
-            amount: toStroops(refundAmount).toString(),
-            paid_at_ledger: paidAtLedger ?? 0,
-          },
-        },
-      }),
-    });
-    if (!res.ok) {
-      throw new Error(`RefundVault RPC failed with HTTP ${res.status}`);
-    }
+  const submit =
+    options?.submit ??
+    (options?.chain
+      ? (call: RefundCall) =>
+          invokeContract(options.chain!, call.refundVaultId, "refund", [
+            scv.bytes32(call.paymentRef),
+            scv.address(call.recipient),
+            scv.i128(call.amountStroops),
+            scv.u32(call.paidAtLedger),
+          ])
+      : undefined);
+  if (!refundVaultId || !submit) {
+    return { refunded: false, refundAmount, paymentRef: pactId, error: "not_submitted: no refund vault or chain configured" };
   }
+  if (paidAtLedger === undefined) {
+    return { refunded: false, refundAmount, paymentRef: pactId, error: "not_submitted: paidAtLedger is required" };
+  }
+
+  // RefundVault.refund(payment_ref = pact_id, recipient = buyer, amount, paid_at_ledger)
+  const sent = await submit({
+    refundVaultId,
+    paymentRef: pactId,
+    recipient: buyer,
+    amountStroops: toStroops(refundAmount),
+    paidAtLedger,
+  });
 
   refundedRefs.add(refKey);
 
@@ -122,7 +133,8 @@ export async function handleM0Refund(
     refunded: true,
     refundAmount,
     paymentRef: pactId,
-    txHash: "simulated_refund_vault_tx_hash",
+    txHash: sent.txHash,
+    ledger: sent.ledger,
   };
 }
 

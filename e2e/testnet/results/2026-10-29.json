@@ -1,0 +1,160 @@
+{
+  "network": "testnet",
+  "runAt": "2026-10-29T08:21:41.326Z",
+  "pactContract": "CDUXJJUNYFILEYHE3LITANJEKCDFERNAABOSG75OWATFVM776BCMFEV6",
+  "usdc": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+  "refundVault": "CCVUWQNA5IDN5T57Q6L52OWLJ4WXDBMJ2SE25DXTQFW7GDV253PORTMR",
+  "buyer": "GCBZJOWJ7VC43XQOKFSHCV3LNGMZAUVXBLRH33YES4IG7RVZADQRMYOQ",
+  "seller": "GAO5KQKCBK7X2M2AYSAQBWDK2YMSYM65E67LCUQ7BER73KA6MBOOXDXC",
+  "verifier": "GBHP3LVWYNHPDOV3ZBCJBGX6K5VSRCRWUKX6IOUL636P7AWJ77SP7TDT",
+  "modelReading": "fixture (rules, signing and every transaction are real)",
+  "scenarios": [
+    {
+      "scenario": "M0 ALLOW",
+      "mode": "M0",
+      "outcome": "ALLOW, seller keeps 1",
+      "pactId": "52412735b5987ecbf17fd34e02d2d874e63d6ce32b4963eadbd50efe1aa46ee1",
+      "toSeller": "1",
+      "toBuyer": "0",
+      "receiptLeaf": "25f68b3645f61d2fa289874ba3c2fb883ca10643cfc6964d1aee400e7833bc06",
+      "steps": [
+        {
+          "label": "x402 exact payment to seller",
+          "tx": "e1105f24d40640eb66a73968c06ae4eedc9f860097a086b0f4450c25995c6600",
+          "ledger": 5447673
+        }
+      ]
+    },
+    {
+      "scenario": "M0 DENY",
+      "mode": "M0",
+      "outcome": "DENY, 1 refunded",
+      "pactId": "bb23d4735778bfbd16a45af38dc80ab3bd33c541f624e52e499c607ad30e44c8",
+      "toSeller": "0",
+      "toBuyer": "1",
+      "receiptLeaf": "6f06a43c2b14a0ac236be0cf07848d3323761f7523d5c321a15794764982aed4",
+      "steps": [
+        {
+          "label": "x402 exact payment to seller",
+          "tx": "ae9975c028fe6d6bb2159cf4b532cebf42dc6ff8de095adedbac29b52542b8a3",
+          "ledger": 5447674
+        },
+        {
+          "label": "RefundVault.refund",
+          "tx": "2b78feb8459b4731aa50bae1a290e3fd84a9a2b4956f5c6d2b7ae4f615bfae59",
+          "ledger": 5447675
+        }
+      ]
+    },
+    {
+      "scenario": "M0 non-delivery",
+      "mode": "M0",
+      "outcome": "DENY, 0.5 refunded",
+      "pactId": "4cf737c8e0cb75e5a44c8c67f8fcc08d076ad666ffb981d0938753ca0b1038e0",
+      "toSeller": "0",
+      "toBuyer": "0.5",
+      "receiptLeaf": "710b5ccd12df330bc1f67fec2ed7261a60964d1d2e1a9ea0974a797d2ca0e2f0",
+      "steps": [
+        {
+          "label": "x402 exact payment to seller",
+          "tx": "df8af0bd9c8f4be9477589d9991ab063134b0e9f92094a90218f5edc9a629005",
+          "ledger": 5447676
+        },
+        {
+          "label": "RefundVault.refund",
+          "tx": "013574756ece7ae81643893f00fb14a2b220d54d096d936ea083a45129189b00",
+          "ledger": 5447677
+        }
+      ]
+    },
+    {
+      "scenario": "M2 ALLOW",
+      "mode": "M2",
+      "outcome": "ALLOW 0.75 of 1, settled",
+      "pactId": "71c875627045d4f7aad5bd8cdd37d6634d868654cfa5c382ab6689c7f26e3779",
+      "toSeller": "0.75",
+      "toBuyer": "0.25",
+      "receiptLeaf": "8f4f89e273b0c615c7d86c30d973f167ecfca382db6c22d6919e59030f219596",
+      "steps": [
+        {
+          "label": "open (1 USDC locked in escrow)",
+          "tx": "0b08b71e164252de154d6500b3b8c23c0d68f6a8a1710b87b86e79bbe1166f6c",
+          "ledger": 5447678
+        },
+        {
+          "label": "record_verdict (ALLOW 0.75, verifier-signed)",
+          "tx": "84a6549aaa6b61b0e8040d1b43f2819914dc0e40f52d85be871f455d0d5a3e71",
+          "ledger": 5447679
+        },
+        {
+          "label": "settle (0.75 to seller, 0.25 back to buyer)",
+          "tx": "9fda6beadb02f863f74e220820642a4509f269c31e3462fccf6318e1e2fa11c5",
+          "ledger": 5447680
+        }
+      ]
+    },
+    {
+      "scenario": "M2 DENY",
+      "mode": "M2",
+      "outcome": "DENY, full refund",
+      "pactId": "147b63a2086ba1f4206fdc92ad23f1bdaf7247c3b4aee1a81beebd29ef3fd8bf",
+      "toSeller": "0",
+      "toBuyer": "1",
+      "receiptLeaf": "252cf1d68dd661de5ea55cbd314b4b053f658fd4c686c2837fd903160978a3b5",
+      "steps": [
+        {
+          "label": "open (1 USDC locked in escrow)",
+          "tx": "b953ee00524d5b0a9b53308ab1e370a2008fb82b7f5a949ac1934d2aa12d17a7",
+          "ledger": 5447681
+        },
+        {
+          "label": "record_verdict (DENY, verifier-signed)",
+          "tx": "324f630d39eb88fa76a60b92617e5867421e9819c290a8f3d71ec4bd8bec9138",
+          "ledger": 5447682
+        },
+        {
+          "label": "release (1 USDC back to buyer)",
+          "tx": "272703bfbe0a74becf50a80b5d16600396a17440a82c9b3af5c481d4748c22cf",
+          "ledger": 5447683
+        }
+      ]
+    },
+    {
+      "scenario": "M2 silence",
+      "mode": "M2",
+      "outcome": "no verdict, refunded by silence policy",
+      "pactId": "ed4b05f4a5874c4516e79a832cb22483ca8b265374be2cbebb607bdd4a143511",
+      "toSeller": "0",
+      "toBuyer": "1",
+      "receiptLeaf": "585b9dcc1efc4f542d2a53bce1f84f5f3a90957540219c6f56a67a861a524431",
+      "steps": [
+        {
+          "label": "open (1 USDC locked in escrow)",
+          "tx": "76df83188eb7cf22c0b6c639fc0a090615ca3040ecfb6a3e43d6347cece27d59",
+          "ledger": 5447684
+        },
+        {
+          "label": "release after the verdict deadline (silence = Refund)",
+          "tx": "e62aff4d291eff2b76ba282aae987d82c6ca91e1681e7944d96abb1f3739f833",
+          "ledger": 5447691
+        }
+      ]
+    },
+    {
+      "scenario": "Dispute refund",
+      "mode": "M0",
+      "outcome": "dispute-1: 2 of 4 pages, 0.5 refunded",
+      "pactId": "52412735b5987ecbf17fd34e02d2d874e63d6ce32b4963eadbd50efe1aa46ee1",
+      "toSeller": "0.5",
+      "toBuyer": "0.5",
+      "receiptLeaf": "1a391259de502344ee307837a1a37416374246642028876e871628e94caa1329",
+      "steps": [
+        {
+          "label": "RefundVault.refund (dispute-1)",
+          "tx": "a191a000f7920f2fff9839bbccceeeca35c82fce29a5e46510fd3db1bcdf2ff0",
+          "ledger": 5447692
+        }
+      ]
+    }
+  ]
+}

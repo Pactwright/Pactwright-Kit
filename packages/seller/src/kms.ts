@@ -84,13 +84,11 @@ export function resolveKmsSigner(options?: KmsSignerOptions): KmsSigner {
   }
 
   if (kmsKeyId) {
-    // Production KMS key: remote hardware module
-    const mockPublicKey = options?.remotePublicKey ?? env.SELLER_PUBLIC_KEY ?? Keypair.random().publicKey();
-    const signFn = options?.remoteSignFn ?? (async (data: Uint8Array) => {
-      // In production, invokes AWS KMS / GCP KMS Sign API (ed25519)
-      return new Uint8Array(Keypair.random().sign(Buffer.from(data)));
-    });
-    return new RemoteKmsSigner(mockPublicKey, signFn);
+    // No built-in KMS client: the caller supplies the signing function and the key's public key.
+    // Signing with any other key would produce signatures nobody can verify.
+    throw new Error(
+      `KMS key ${kmsKeyId} is configured but no remote signer was given: pass remoteSignFn and remotePublicKey`,
+    );
   }
 
   const localSecret = options?.localSecret ?? env.SELLER_SECRET_KEY ?? env.DELIVERY_SECRET_KEY;

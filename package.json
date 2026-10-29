@@ -12,7 +12,8 @@
     "eval": "pnpm build && node services/verifier/eval/run.ts",
     "lint": "eslint .",
     "format": "prettier --check .",
-    "build": "pnpm -r --filter \"./packages/*\" run build"
+    "build": "pnpm -r --filter \"./packages/*\" run build",
+    "e2e:testnet": "vitest run --config e2e/testnet/vitest.config.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.0",

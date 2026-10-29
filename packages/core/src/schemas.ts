@@ -78,6 +78,8 @@ export const PactTermsSchema = z.object({
   conditionHash: Hex64,
   condition: z.record(z.string(), z.unknown()),
   verifier: Hex64,
+  /** Seller's ed25519 delivery key from the 402 terms; verifies `X-Pactwright-Delivery`. */
+  deliveryKey: Hex64.optional(),
   metered: z.boolean(),
   verify: z.object({ minAmount: DecimalAmount }).optional(),
   silence: SilenceSchema.optional(),

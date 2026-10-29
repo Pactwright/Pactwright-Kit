@@ -57,5 +57,7 @@ export async function submit(
   }
 
   const data = (await res.json().catch(() => ({}))) as SubmitResponse;
-  return data.txHash ?? data.tx ?? `tx_submitted_${pactId.slice(0, 16)}`;
+  const txHash = data.txHash ?? data.tx;
+  if (!txHash) throw new Error(`Facilitator accepted ${call} for pact ${pactId} but returned no transaction hash`);
+  return txHash;
 }

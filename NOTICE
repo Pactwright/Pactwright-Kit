@@ -5,7 +5,8 @@ Pactwright builds on ideas, formats and code from the following projects.
 Each is credited here whether we use its code, its format or only its idea.
 
 Accensa (MIT / Apache-2.0)
-  https://github.com/accensa/accensa-contracts  - RefundVault, ReceiptAnchor (pinned WASM)
+  https://github.com/accensa/accensa-contracts  - RefundVault, ReceiptAnchor (pinned WASM);
+  refund_vault.wasm v0.2.0 as a hash-checked test fixture in e2e/testnet/fixtures (MIT)
   https://github.com/accensa/x402-facilitator-stellar - x402 facilitator, `pact` scheme
   https://github.com/accensa/accensa-app - @accensa/sdk (vendored in vendor/accensa-sdk,
   commit 69a22eb2a4ae8a48c9b05c3237ddeb4eb0f5e6b6, MIT), indexer patterns; Merkle conformance

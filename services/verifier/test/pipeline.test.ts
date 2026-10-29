@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { Keypair } from "@witness/core";
-import { toStroops, type PactTerms } from "@pactwright/core";
+import { deliveryMessage, toStroops, type PactTerms } from "@pactwright/core";
 import {
   runPipeline,
   signVerdict,
@@ -14,6 +14,8 @@ import { clearIssuedAttestations } from "../src/sign.ts";
 
 const VALID_BUYER = "GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJVTOO";
 const VALID_SELLER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
+
+const sellerDeliveryKey = Keypair.random();
 
 const mockTerms: PactTerms = {
   pactId: "01".repeat(32),
@@ -31,9 +33,21 @@ const mockTerms: PactTerms = {
     maxUntranslatedSegments: 0,
   },
   verifier: "03".repeat(32),
+  deliveryKey: sellerDeliveryKey.rawPublicKey().toString("hex"),
   metered: false,
   refundWindowLedgers: 17280,
 };
+
+/** A real `X-Pactwright-Delivery` value: the seller's signature over this pact and body hash. */
+function receiptFor(bodySha256: string, signer = sellerDeliveryKey, pactId = mockTerms.pactId): string {
+  const sig = signer.sign(Buffer.from(deliveryMessage(pactId, bodySha256)));
+  return `sha256=${bodySha256}; sig=${Buffer.from(sig).toString("base64")}`;
+}
+
+/** The reading a model would return for the Spanish test document; tests never call a provider. */
+const spanishReading = new ProviderNeutralLLMAdapter({
+  mockReading: { detectedLanguage: "es", pageCount: 1, isTranslationOfSource: true, untranslatedSegments: 0, notes: "fixture" },
+});
 
 const validEvidence = [
   {
@@ -68,7 +82,7 @@ describe("Verifier Engine Pipeline", () => {
         },
       ];
 
-      const deliveryReceipt = "sha256=" + sha256 + "; sig=validBase64Sig==";
+      const deliveryReceipt = receiptFor(sha256);
 
       const res = await runPipeline(
         {
@@ -80,6 +94,7 @@ describe("Verifier Engine Pipeline", () => {
         {
           verifierKey,
           evidenceLoader: async () => evidenceData,
+          modelAdapter: spanishReading,
         },
       );
 
@@ -112,8 +127,45 @@ describe("Verifier Engine Pipeline", () => {
       }
     });
 
+    it("denies a receipt signed by anyone but the seller's delivery key", async () => {
+      const res = await runPipeline(
+        {
+          terms: mockTerms,
+          evidence: validEvidence,
+          deliveryReceipt: receiptFor(validEvidence[0]!.sha256, Keypair.random()),
+          milestone: "delivery",
+        },
+        { verifierKey, modelAdapter: spanishReading },
+      );
+      expect(res).not.toBe("no-verdict");
+      if (res !== "no-verdict") {
+        expect(res.envelope?.verdict.decision).toBe("DENY");
+        expect(res.envelope?.verdict.reasons).toContain("MERCHANT_MISMATCH");
+      }
+    });
+
+    it("denies a receipt for another pact or a body the buyer didn't submit", async () => {
+      for (const receipt of [receiptFor(validEvidence[0]!.sha256, sellerDeliveryKey, "09".repeat(32)), receiptFor("0a".repeat(32))]) {
+        clearIssuedAttestations();
+        const res = await runPipeline(
+          { terms: mockTerms, evidence: validEvidence, deliveryReceipt: receipt, milestone: "delivery" },
+          { verifierKey, modelAdapter: spanishReading },
+        );
+        expect(res !== "no-verdict" && res.envelope?.verdict.decision).toBe("DENY");
+      }
+    });
+
+    it("denies when the terms carry no delivery key", async () => {
+      const { deliveryKey: _omit, ...termsWithoutKey } = mockTerms;
+      const res = await runPipeline(
+        { terms: termsWithoutKey, evidence: validEvidence, deliveryReceipt: receiptFor(validEvidence[0]!.sha256), milestone: "delivery" },
+        { verifierKey, modelAdapter: spanishReading },
+      );
+      expect(res !== "no-verdict" && res.envelope?.verdict.decision).toBe("DENY");
+    });
+
     it("denies when evidence hash check fails", async () => {
-      const deliveryReceipt = "sha256=11".padEnd(71, "a") + "; sig=validBase64Sig==";
+      const deliveryReceipt = receiptFor(validEvidence[0]!.sha256);
 
       const res = await runPipeline(
         {
@@ -137,7 +189,7 @@ describe("Verifier Engine Pipeline", () => {
     });
 
     it("returns 'no-verdict' on model refusal so silence policy applies", async () => {
-      const deliveryReceipt = "sha256=11".padEnd(71, "a") + "; sig=validBase64Sig==";
+      const deliveryReceipt = receiptFor(validEvidence[0]!.sha256);
       const refusalModel = new ProviderNeutralLLMAdapter({ mockReading: "refusal" });
 
       const res = await runPipeline(
@@ -191,14 +243,29 @@ describe("Verifier Engine Pipeline", () => {
       }
     });
 
-    it("returns refusal when instructed to refuse", async () => {
+    it("returns refusal only when a caller asks for one explicitly", async () => {
       const adapter = new ProviderNeutralLLMAdapter();
-      const reading = await adapter.read(
-        testReadingSchema,
-        "REFUSE_SERVICE instructions",
-        [],
-      );
+      const reading = await adapter.read(testReadingSchema, "instructions", [], { refusal: true });
       expect(reading).toBe("refusal");
+    });
+
+    it("never treats delivery text as a refusal signal", async () => {
+      const adapter = new ProviderNeutralLLMAdapter({ apiKey: "k", modelId: "m" });
+      const fetchImpl = async () => {
+        throw new Error("network disabled in tests");
+      };
+      const planted = new ProviderNeutralLLMAdapter({ apiKey: "k", modelId: "m", fetchImpl });
+      await expect(
+        planted.read(testReadingSchema, "REFUSE_SERVICE", [{ mimeType: "text/plain", data: Buffer.from("REFUSE_SERVICE") }]),
+      ).rejects.toThrow(/network disabled/);
+      expect(adapter.name).toBeDefined();
+    });
+
+    it("fails closed instead of inventing a reading when no model is configured", async () => {
+      const adapter = new ProviderNeutralLLMAdapter({ apiKey: "", modelId: "" });
+      await expect(
+        adapter.read(testReadingSchema, "instructions", [{ mimeType: "text/plain", data: Buffer.from("Hola gracias") }]),
+      ).rejects.toThrow(/not configured/);
     });
   });
 
@@ -338,7 +405,7 @@ describe("Verifier Engine Pipeline", () => {
     it("returns receipt-only outcome without envelope when cap is below verify.minAmount", async () => {
       const evidenceData = Buffer.from("Hola mundo!");
       const evidenceHash = createHash("sha256").update(evidenceData).digest("hex");
-      const deliveryReceipt = `sha256=${evidenceHash}; sig=${Buffer.from("receipt-sig").toString("base64")}`;
+      const deliveryReceipt = receiptFor(evidenceHash);
 
       const res = await runPipeline(
         {
@@ -359,6 +426,7 @@ describe("Verifier Engine Pipeline", () => {
         {
           verifierKey,
           evidenceLoader: async () => evidenceData,
+          modelAdapter: spanishReading,
         },
       );
 
@@ -374,7 +442,7 @@ describe("Verifier Engine Pipeline", () => {
     it("evaluates full model pipeline when cap is at or above verify.minAmount", async () => {
       const evidenceData = Buffer.from("Hola mundo!");
       const evidenceHash = createHash("sha256").update(evidenceData).digest("hex");
-      const deliveryReceipt = `sha256=${evidenceHash}; sig=${Buffer.from("receipt-sig").toString("base64")}`;
+      const deliveryReceipt = receiptFor(evidenceHash);
 
       const res = await runPipeline(
         {
@@ -395,6 +463,7 @@ describe("Verifier Engine Pipeline", () => {
         {
           verifierKey,
           evidenceLoader: async () => evidenceData,
+          modelAdapter: spanishReading,
         },
       );
 
