@@ -16,6 +16,8 @@ export interface VerifierConfig {
   verifierKey: Keypair;
   facilitatorUrl: string;
   evidenceBucketUrl: string;
+  /** Stellar RPC: the current ledger goes into every escrow attestation. */
+  rpcUrl: string;
   /** Seconds a seller has to answer a non-delivery challenge. */
   nonDeliveryTimeoutSec: number;
   port: number;
@@ -63,8 +65,10 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
   const secret = required("VERIFIER_SECRET_KEY");
   const facilitatorUrl = required("FACILITATOR_URL");
   const evidenceBucketUrl = required("EVIDENCE_BUCKET_URL");
+  const rpcUrl = required("STELLAR_RPC_URL");
   if (facilitatorUrl) url(facilitatorUrl, "FACILITATOR_URL", problems);
   if (evidenceBucketUrl) url(evidenceBucketUrl, "EVIDENCE_BUCKET_URL", problems);
+  if (rpcUrl) url(rpcUrl, "STELLAR_RPC_URL", problems);
   const nonDeliveryTimeoutSec = positiveInt(env.NON_DELIVERY_TIMEOUT_SEC, 300, "NON_DELIVERY_TIMEOUT_SEC", problems);
   // Hosts such as Render inject PORT; VERIFIER_PORT wins when both are set.
   const portVar = env.VERIFIER_PORT?.trim() ? "VERIFIER_PORT" : "PORT";
@@ -89,6 +93,7 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
     verifierKey,
     facilitatorUrl,
     evidenceBucketUrl,
+    rpcUrl,
     nonDeliveryTimeoutSec,
     port,
   };

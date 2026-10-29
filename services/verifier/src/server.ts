@@ -123,7 +123,27 @@ export function startServer(config: VerifierConfig): ReturnType<typeof serve> {
   const app = createApp({
     verifierKey: config.verifierKey,
     store: new MemoryVerdictStore(),
-    pipeline: (input) => runPipeline(input, { verifierKey: config.verifierKey, modelAdapter, evidenceLoader }),
+    pipeline: async (input) =>
+      runPipeline(input, {
+        verifierKey: config.verifierKey,
+        modelAdapter,
+        evidenceLoader,
+        ledgerSeq: await currentLedger(config.rpcUrl),
+      }),
   });
   return serve({ fetch: app.fetch, port: config.port });
+}
+
+/** The network's latest ledger, stamped into attestations as `issued_ledger`. */
+export async function currentLedger(rpcUrl: string, fetchImpl: typeof fetch = globalThis.fetch): Promise<number> {
+  const res = await fetchImpl(rpcUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getLatestLedger" }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  const body = (await res.json().catch(() => ({}))) as { result?: { sequence?: number } };
+  const sequence = body.result?.sequence;
+  if (!res.ok || typeof sequence !== "number") throw new Error(`could not read the latest ledger from ${rpcUrl}`);
+  return sequence;
 }

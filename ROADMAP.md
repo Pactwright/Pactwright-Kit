@@ -69,7 +69,7 @@ Trustworthy, reproducible verdicts for one condition kind.
 - [x] **V-07** `non-delivery.ts`: seller webhook challenge → DENY on timeout — wave · H · V-05 · FR-V6 (#71, 2026-10-29)
 - [x] **V-08** Eval set (≥ 50 labelled cases) + accuracy script + `verifier-eval.yml` (fails < 90%) — wave · H · V-04 (#72, 2026-10-29)
 - [x] **V-09** `verify.minAmount` handling (receipt-only below threshold) — wave · M · V-05 · FR-V7 (#72, 2026-10-29)
-- [~] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 — the Render deploy failed to build (Dockerfile missed tsconfig.base.json, fixed in #89); needs EVIDENCE_BUCKET_URL on Render to start
+- [~] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 — live on Render with evidence in Pactwright/pactwright-evidence; escrow attestations now carry the real current ledger (they had a fixed 100, which `record_verdict` rejects); done when a hosted verdict is accepted on testnet
 - [x] **V-12** Real-model accuracy: run the labelled eval set through the configured model (not hand-written readings) and gate on ≥ 90% (#80) — core · H · V-10 · PRD §8 (#92, 2026-10-29)
 - [x] **V-11** Measure verification latency; set default deadline lengths; answer Q6 — core · M · V-10 · Q6 (#72, 2026-10-29)
 
@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | verifier ledger | V-10 stays `[~]` | The hosted verifier stamped escrow attestations with ledger 100, so `record_verdict` would reject them; it now reads the latest ledger from STELLAR_RPC_URL and refuses to sign without one. |
 | 2026-10-29 | #92 | V-12 → `[x]` | Real-model eval: 29/29 (100%) on the labelled `document.translation` cases through the full pipeline with Google `gemini-3.5-flash-lite` (run 40897633766). Got there by fixing the empty base URL, adding a request timeout (a run hung 35 min) and 429/503 retries. The Render verifier now uses the same model config. |
 | 2026-10-29 | #92 | — (V-12) | The first real-model eval run failed before reaching the model: an empty `LLM_BASE_URL` (unset CI variable) became the base URL, so every call went to `/chat/completions`. Empty now means the provider default. |
 | 2026-10-29 | #91 | P7-08 → `[x]` | A RefundVault refund signed through a real KMS: HashiCorp Vault transit (ed25519, non-exportable) is the vault's merchant; `resolveKmsSigner` + `handleM0Refund` sent the refund (`fcb0d7a8…`), whose only signature is the Vault key's. Reusable as `pnpm e2e:kms`. |
