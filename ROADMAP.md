@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Last updated | 2026-10-29 |
-| Progress | **22 / 52 tasks (42%)** |
+| Progress | **27 / 52 tasks (52%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -17,7 +17,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 |---|---|---|---|
 | Foundations (this repo) | 7 | 5 | 71% |
 | Phase 3 — Kit | 17 | 14 | 82% |
-| Phase 4 — Verifier | 11 | 2 | 18% |
+| Phase 4 — Verifier | 11 | 7 | 64% |
 | Phase 7 — v1 | 10 | 0 | 0% |
 | Phase 9 — v2 | 7 | 1 | 14% |
 
@@ -60,12 +60,12 @@ SDK, MCP and CLI for M0 and M2.
 Trustworthy, reproducible verdicts for one condition kind.
 
 - [x] **V-01** Hono server, `/health`, `/v1/envelopes/:sha256`, store with unique `(pact_id, milestone)` — wave · M · K-01 (#65, 2026-10-28)
-- [ ] **V-02** Pipeline: delivery-receipt check, evidence hash check — core · H · K-03 · FR-V2, FR-V3
-- [ ] **V-03** Provider-neutral LLM adapter (`models/llm.ts`): provider + model pinned in config, explicit effort where supported, structured output; no sampling params; refusal → no verdict; provider, model ID, effort + raw-output hash in the envelope — wave · M · V-01 · FR-V5
+- [x] **V-02** Pipeline: delivery-receipt check, evidence hash check — core · H · K-03 · FR-V2, FR-V3 (#71, 2026-10-29)
+- [x] **V-03** Provider-neutral LLM adapter (`models/llm.ts`): provider + model pinned in config, explicit effort where supported, structured output; no sampling params; refusal → no verdict; provider, model ID, effort + raw-output hash in the envelope — wave · M · V-01 · FR-V5 (#71, 2026-10-29)
 - [x] **V-04** `rules/document-translation.ts` deterministic rules, with partial `amount` — wave · H · V-03 · FR-V4 (#65, 2026-10-28)
-- [ ] **V-05** `sign.ts`: verdict-v1 envelope + one attestation per pact — core · H · V-02 · FR-V8
-- [ ] **V-06** `submit.ts`: `record_verdict` / `release` via `/pact/submit` — wave · M · V-05, X-04
-- [ ] **V-07** `non-delivery.ts`: seller webhook challenge → DENY on timeout — wave · H · V-05 · FR-V6
+- [x] **V-05** `sign.ts`: verdict-v1 envelope + one attestation per pact — core · H · V-02 · FR-V8 (#71, 2026-10-29)
+- [x] **V-06** `submit.ts`: `record_verdict` / `release` via `/pact/submit` — wave · M · V-05, X-04 (#71, 2026-10-29)
+- [x] **V-07** `non-delivery.ts`: seller webhook challenge → DENY on timeout — wave · H · V-05 · FR-V6 (#71, 2026-10-29)
 - [ ] **V-08** Eval set (≥ 50 labelled cases) + accuracy script + `verifier-eval.yml` (fails < 90%) — wave · H · V-04
 - [ ] **V-09** `verify.minAmount` handling (receipt-only below threshold) — wave · M · V-05 · FR-V7
 - [ ] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06
@@ -102,6 +102,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-29 | #71 | V-02, V-03, V-05, V-06, V-07 → `[x]` | Verifier pipeline (receipt check, evidence sha256 verification, rule dispatch, attestation/envelope generation), provider-neutral LLM adapter with modelId and raw sha256 pinning and refusal handling, envelope and one-attestation-per-pact signing, on-chain submit helper (/pact/submit), and seller non-delivery challenge webhook with timeout. 316 tests pass. |
 | 2026-10-29 | #70 | K-08, K-09, K-10, K-11, K-12 → `[x]` | Complete Agent runtime (find, M0/M2 buy, idempotency, await terminal states, certificate retrieval and offline verification), agent account management (CAP-33 sponsored reserves with 0 XLM balance + USDC trustline, budget top-ups), MCP server with all 5 buyer tools and structured errors, and Pactwright CLI with verify, pact, agent-create, agent-topup. 304 tests pass. |
 | 2026-10-29 | #69 | K-06, K-07, K-13 → `[x]` | Seller middleware with 402 builder, Express pact middleware, signed X-Pactwright-Delivery, terminal pact refusal (409), startup checks (env, delivery key, USDC trustline); seller settle/refund hooks (createSettleHook re-export, M0 handleM0Refund, M2 handleAutoSettle); MVP adapters (discovery-bazaar, reputation-identity, gate-manual, wallet-keypair, verifier-witness). 273 tests pass. |
 | 2026-10-29 | #68 | K-03, K-05, F-14, P9-07 → `[x]` | Core hashing matching contract vectors (all 8 it.todos replaced by passing tests, condition_hash generated), contracts-client bindings generated and tested, @accensa/sdk vendored with createSettleHook and tests for seller middleware, Q3 answered in PRD (§12). 245 tests pass. |
