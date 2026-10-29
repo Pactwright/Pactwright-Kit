@@ -283,20 +283,6 @@ money, and a missing verdict falls back to the agreed silence policy.
 | [Ficha](https://github.com/beto-rocha-blockchain/ficha-stellar) | Refunding unused units | Metered sessions with signed usage vouchers |
 | [Pollar](https://docs.pollar.xyz) | Seedless wallets | Wallet adapter, through the public SDK only |
 
-## Testnet Verified Transactions (L-01)
-
-Every MVP scenario runs on Stellar Testnet with verified on-chain evidence:
-
-| Scenario | Mode | Outcome | Transaction Hash | Explorer Link |
-|---|---|---|---|---|
-| **M0 ALLOW** | Exact Refund | Delivered, Paid | `e2e_m0_allow_01` | [Stellar Expert](https://stellar.expert/explorer/testnet/tx/1e2e01a0112233445566778899aabbccddeeff00112233445566778899aabbcc) |
-| **M0 DENY** | Exact Refund | Rejected, Refunded | `e2e_m0_deny_02` | [Stellar Expert](https://stellar.expert/explorer/testnet/tx/2e2e02b0112233445566778899aabbccddeeff00112233445566778899aabbcc) |
-| **M0 Non-delivery** | Exact Refund | Challenged Timeout, Refunded | `e2e_m0_nondeliv_03` | [Stellar Expert](https://stellar.expert/explorer/testnet/tx/3e2e03c0112233445566778899aabbccddeeff00112233445566778899aabbcc) |
-| **M2 ALLOW** | Escrow | Verified Attestation, Settled | `e2e_m2_allow_04` | [Stellar Expert](https://stellar.expert/explorer/testnet/tx/4e2e04d0112233445566778899aabbccddeeff00112233445566778899aabbcc) |
-| **M2 DENY** | Escrow | Verdict Denied, Released | `e2e_m2_deny_05` | [Stellar Expert](https://stellar.expert/explorer/testnet/tx/5e2e05e0112233445566778899aabbccddeeff00112233445566778899aabbcc) |
-| **M2 Silence** | Escrow | Settle Expired, Released | `e2e_m2_silence_06` | [Stellar Expert](https://stellar.expert/explorer/testnet/tx/6e2e06f0112233445566778899aabbccddeeff00112233445566778899aabbcc) |
-| **Dispute Refund** | Escrow / Vault | Dispute Reversed, Refunded | `e2e_dispute_07` | [Stellar Expert](https://stellar.expert/explorer/testnet/tx/7e2e07a0112233445566778899aabbccddeeff00112233445566778899aabbcc) |
-
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Every pull request updates
