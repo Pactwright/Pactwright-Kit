@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Keypair, type VerificationEnvelope } from "@witness/core";
+import { NotImplementedError } from "@pactwright/core";
 import { createApp } from "../src/server.ts";
 import { DuplicateVerdictError, MemoryVerdictStore } from "../src/store.ts";
 import { loadVerifierConfig, type VerifierConfigError } from "../src/config.ts";
@@ -62,7 +63,8 @@ describe("verifier HTTP API", () => {
   });
 
   it("returns 501 naming the roadmap task while the pipeline is a stub", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: runPipeline });
+    const stubPipeline = () => { throw new NotImplementedError("V-02"); };
+    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: stubPipeline });
     const res = await post(app, { terms, evidence });
     expect(res.status).toBe(501);
     expect(await res.json()).toEqual({ error: "not_implemented", roadmapTask: "V-02" });
