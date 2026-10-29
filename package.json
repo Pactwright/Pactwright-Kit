@@ -9,7 +9,7 @@
   "scripts": {
     "typecheck": "pnpm --filter @witness/core run typecheck && pnpm --filter @witness/core run build && pnpm --filter @accensa/sdk run typecheck && pnpm --filter @accensa/sdk run build && pnpm --filter @pactwright/contracts-client run build && tsc -p tsconfig.json",
     "test": "vitest run",
-    "eval": "node services/verifier/eval/run.ts",
+    "eval": "pnpm build && node services/verifier/eval/run.ts",
     "lint": "eslint .",
     "format": "prettier --check .",
     "build": "pnpm -r --filter \"./packages/*\" run build"
