@@ -22,3 +22,32 @@ export {
   type RefundOptions,
   type RefundResult,
 } from "./hooks/refund.ts";
+export {
+  handleDisputeRefund,
+  type DisputeNotification,
+  type DisputeRefundResult,
+} from "./hooks/dispute.ts";
+export {
+  createRefundSigner,
+  type RefundSigner,
+} from "./refund-signer.ts";
+export {
+  LocalKeypairSigner,
+  RemoteKmsSigner,
+  resolveKmsSigner,
+  type KmsSigner,
+  type KmsSignerOptions,
+} from "./kms.ts";
+export {
+  ProofOfPurchaseHook,
+  createProofOfPurchaseHook,
+  type ProofOfPurchaseEntry,
+  type ProofOfPurchaseHookOptions,
+} from "./hooks/proof-of-purchase.ts";
+export {
+  MeterHook,
+  createMeterHook,
+  type MeterHookOptions,
+  type StoredMeterVoucher,
+  type CloseMeterResult,
+} from "./hooks/meter.ts";

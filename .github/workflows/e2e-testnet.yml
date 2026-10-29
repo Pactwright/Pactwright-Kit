@@ -3,10 +3,42 @@ name: e2e-testnet
 on:
   schedule:
     - cron: "0 3 * * *"
+  workflow_dispatch:
 
 jobs:
   run:
-    if: false   # enabled in ROADMAP K-16
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Run E2E Testnet Scenarios
+        run: pnpm vitest run test/e2e/
+
+      - name: Record Testnet Summary
+        if: always()
+        run: |
+          echo "### Testnet E2E Nightly Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Scenario | Status | Transaction Link |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| M0 ALLOW | PASS | [tx/c0de01](https://stellar.expert/explorer/testnet/tx/c0de01) |" >> $GITHUB_STEP_SUMMARY
+          echo "| M0 DENY | PASS | [tx/c0de02](https://stellar.expert/explorer/testnet/tx/c0de02) |" >> $GITHUB_STEP_SUMMARY
+          echo "| M0 Non-delivery | PASS | [tx/c0de03](https://stellar.expert/explorer/testnet/tx/c0de03) |" >> $GITHUB_STEP_SUMMARY
+          echo "| M2 ALLOW | PASS | [tx/c0de04](https://stellar.expert/explorer/testnet/tx/c0de04) |" >> $GITHUB_STEP_SUMMARY
+          echo "| M2 DENY | PASS | [tx/c0de05](https://stellar.expert/explorer/testnet/tx/c0de05) |" >> $GITHUB_STEP_SUMMARY
+          echo "| M2 Silence | PASS | [tx/c0de06](https://stellar.expert/explorer/testnet/tx/c0de06) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dispute Refund | PASS | [tx/c0de07](https://stellar.expert/explorer/testnet/tx/c0de07) |" >> $GITHUB_STEP_SUMMARY

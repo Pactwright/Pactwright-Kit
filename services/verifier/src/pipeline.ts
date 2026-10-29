@@ -42,6 +42,7 @@ export interface PipelineOptions {
   fetchImpl?: typeof fetch;
   evidenceLoader?: (item: EvidenceItem) => Promise<Uint8Array>;
   ledgerSeq?: number;
+  settledLedger?: number;
 }
 
 export function parseDeliveryHeader(header: string): { bodySha256: string; signature: string } | null {
@@ -66,6 +67,43 @@ export async function runPipeline(
 
   const model = options?.modelAdapter ?? llmAdapter;
   const capStroops = toStroops(terms.cap);
+
+  // Check refund window for disputes (ROADMAP P7-05, FR-S6)
+  if (milestone.startsWith("dispute-") && terms.refundWindowLedgers && options?.settledLedger && options?.ledgerSeq) {
+    if (options.ledgerSeq > options.settledLedger + terms.refundWindowLedgers) {
+      const expiredDecision: RuleDecision = {
+        verdict: "DENY",
+        amount: 0n,
+        criteria: [
+          {
+            id: "refund_window",
+            verifier: verifierKey.publicKey(),
+            result: "FAIL",
+            code: "EVIDENCE_OUT_OF_WINDOW",
+            reason: `Dispute submitted after refund window closed (${options.ledgerSeq} > ${options.settledLedger} + ${terms.refundWindowLedgers})`,
+            mandatory: true,
+          },
+        ],
+        reasons: ["EVIDENCE_OUT_OF_WINDOW"],
+        policyVersion: "pactwright/dispute@1",
+      };
+
+      const signRes = await signVerdict({
+        terms,
+        decision: expiredDecision,
+        evidence,
+        verifierKey,
+        milestone,
+        ledgerSeq: options.ledgerSeq,
+      });
+
+      return {
+        envelope: signRes.envelope,
+        envelopeRef: signRes.envelopeRef,
+        amount: 0n,
+      };
+    }
+  }
 
   // 1. Delivery receipt check
   if (!deliveryReceipt) {

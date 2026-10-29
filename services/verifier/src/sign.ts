@@ -73,8 +73,9 @@ export async function signVerdict(params: SignPipelineParams): Promise<SignPipel
 
   let attestationResult: SignPipelineResult["attestation"];
 
-  // Escrow pacts require exactly one on-chain VerdictAttestation
-  if (terms.mode === "escrow") {
+  // Escrow pacts require exactly one on-chain VerdictAttestation (delivery milestone only).
+  // Disputes produce new envelopes, never new attestations (ROADMAP P7-05, FR-S6).
+  if (terms.mode === "escrow" && milestone === "delivery") {
     const pactIdLower = terms.pactId.toLowerCase();
     if (issuedAttestations.has(pactIdLower)) {
       throw new Error(`Attestation already issued for pact ${terms.pactId}. Only one attestation per pact allowed.`);

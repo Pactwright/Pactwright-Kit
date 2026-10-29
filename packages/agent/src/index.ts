@@ -11,3 +11,14 @@ export {
 export { deriveNonce } from "./idempotency.ts";
 export { getCertificate, type CertificateOptions } from "./certificate.ts";
 export { find } from "./find.ts";
+export {
+  startMeterLoop,
+  type MeterLoop,
+  type MeterLoopOptions,
+  type SignedUsageVoucher,
+} from "./meter-loop.ts";
+export {
+  SmartAccountAgent,
+  type SmartAccountPolicy,
+  type SpendAuthorization,
+} from "./smart-account.ts";
