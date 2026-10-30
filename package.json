@@ -18,7 +18,7 @@
     "e2e:hosted-verifier": "E2E_FILE=e2e/testnet/hosted-verifier.e2e.ts vitest run --config e2e/testnet/vitest.config.ts"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.0",
+    "@changesets/cli": "^3.0.3",
     "@types/node": "^24.0.0",
     "prettier": "^3.6.0",
     "typescript": "^5.9.0",
