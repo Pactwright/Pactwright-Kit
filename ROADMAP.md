@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-30 | README | — | README: 364 tests plus 57 vendored; the hosted verifier (V-10) with its testnet evidence; envelopes kept in Postgres; the KMS-signed refund; nightly e2e status; corrected seller and verifier configuration (the code reads KMS_KEY_ID, not SELLER_SIGNING_KEY_REF, also fixed in .env.example); links to the docs site. Verifier README: deployed, Postgres store, current settings. |
 | 2026-10-30 | deps | — | GitHub Actions: actions/checkout v7, actions/setup-node v7, pnpm/action-setup v6, in one change (replaces Dependabot #1, #2 and #3, which edit adjacent lines and would conflict with each other). |
 | 2026-10-29 | #95 | — (V-10) | Envelope references pointed at a nonexistent verifier.pactwright.dev and envelopes lived in memory, so references broke on every restart. They now point at the service's own URL (VERIFIER_PUBLIC_URL, else RENDER_EXTERNAL_URL) and are kept in Postgres (`verifier_envelopes`, one row per pact and milestone); production refuses to start without a database. |
 | 2026-10-29 | #94 | V-10 → `[x]` | Live on testnet: the hosted verifier read evidence from Pactwright/pactwright-evidence with its model, signed ALLOW 1 USDC at issued_ledger 5453756, and `record_verdict` accepted it (pact 40725564…, record_verdict 0225f78b…, settle 1f4ab38c…). Reusable as `pnpm e2e:hosted-verifier`. |
