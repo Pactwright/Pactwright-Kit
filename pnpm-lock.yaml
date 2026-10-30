@@ -238,8 +238,8 @@ importers:
   services/verifier:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.19.0
-        version: 1.19.17(hono@4.13.14)
+        specifier: ^2.1.5
+        version: 2.1.5(hono@4.13.14)
       '@pactwright/contracts-client':
         specifier: workspace:*
         version: link:../../packages/contracts-client
@@ -381,6 +381,12 @@ packages:
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
+
+  '@hono/node-server@2.1.5':
+    resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2250,6 +2256,10 @@ snapshots:
       levn: 0.4.1
 
   '@hono/node-server@1.19.17(hono@4.13.14)':
+    dependencies:
+      hono: 4.13.14
+
+  '@hono/node-server@2.1.5(hono@4.13.14)':
     dependencies:
       hono: 4.13.14
 
