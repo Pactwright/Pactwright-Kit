@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-31 | #105 | F-07 stays `[x]` | eslint 9.39.5 → 10.13.0 (dev dependency). |
 | 2026-10-31 | #104 | F-07 stays `[x]` | actions/upload-artifact 4.6.2 → 7.0.2 (CI). Every workflow that uploads an artifact runs on this branch, so the run itself is the evidence. |
 | 2026-10-31 | #103 | F-07 stays `[x]` | @changesets/cli 2.31.1 → 3.0.3 (dev dependency, release tooling). |
 | 2026-10-31 | #102 | F-07 stays `[x]` | `vitest` 4.1.12 → 5.0.5 (dev dependency). The suite is the gate: `pnpm test` on this branch is the evidence. |
