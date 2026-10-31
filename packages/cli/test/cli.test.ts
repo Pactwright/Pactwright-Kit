@@ -73,16 +73,71 @@ describe("Pactwright CLI Commands", () => {
   });
 
   describe("pact command", () => {
-    it("displays pact status and timeline", async () => {
+    // This used to call `pact()` with no fetchImpl, so every `pnpm test` made a real outbound request
+    // to studio.pactwright.dev and asserted only that "State:" appeared — true whether the read worked
+    // or the command printed an invented "settled" timeline.
+    it("displays the pact state it read", async () => {
       const logs: string[] = [];
+      const asked: string[] = [];
       await pact(["01".repeat(32)], {
+        facilitatorUrl: "http://studio.test",
+        fetchImpl: async (url) => {
+          asked.push(String(url));
+          return new Response(
+            JSON.stringify({
+              pactId: "01".repeat(32),
+              state: "funded",
+              mode: "escrow",
+              timeline: [{ stage: "opened", timestamp: "2026-10-29T00:00:00Z" }],
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        },
         log: (msg) => logs.push(msg),
         error: () => {},
       });
 
-      expect(logs.some((l) => l.includes("Pact:"))).toBe(true);
-      expect(logs.some((l) => l.includes("State:"))).toBe(true);
-      expect(logs.some((l) => l.includes("Timeline:"))).toBe(true);
+      expect(asked).toEqual(["http://studio.test/api/pacts/" + "01".repeat(32)]);
+      expect(logs).toContain("State:    funded");
+      expect(logs.some((l) => l.includes("- opened (2026-10-29T00:00:00Z)"))).toBe(true);
+      expect(logs.join("\n")).not.toContain("settled");
+    });
+
+    it("reports an unreadable pact as unknown instead of inventing a timeline", async () => {
+      const logs: string[] = [];
+      const errors: string[] = [];
+      process.exitCode = 0;
+      await pact(["02".repeat(32)], {
+        facilitatorUrl: "http://studio.test",
+        fetchImpl: async () => new Response("nope", { status: 503, statusText: "Service Unavailable" }),
+        log: (msg) => logs.push(msg),
+        error: (msg) => errors.push(msg),
+      });
+
+      expect(errors.some((e) => e.includes("Could not read pact") && e.includes("503"))).toBe(true);
+      expect(logs).toContain("State:    unknown");
+      expect(logs.join("\n")).not.toContain("Timeline:");
+      expect(logs.join("\n")).not.toContain("settled");
+      expect(process.exitCode).toBe(1);
+      process.exitCode = 0;
+    });
+
+    it("reports a transport failure as unknown too", async () => {
+      const logs: string[] = [];
+      const errors: string[] = [];
+      process.exitCode = 0;
+      await pact(["03".repeat(32)], {
+        facilitatorUrl: "http://studio.test",
+        fetchImpl: (async () => {
+          throw new Error("getaddrinfo ENOTFOUND studio.test");
+        }) as typeof fetch,
+        log: (msg) => logs.push(msg),
+        error: (msg) => errors.push(msg),
+      });
+
+      expect(errors.some((e) => e.includes("ENOTFOUND"))).toBe(true);
+      expect(logs).toContain("State:    unknown");
+      process.exitCode = 0;
     });
 
     it("shows usage error when no pactId provided", async () => {
