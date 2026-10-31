@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-31 | #102 | F-07 stays `[x]` | `vitest` 4.1.12 → 5.0.5 (dev dependency). The suite is the gate: `pnpm test` on this branch is the evidence. |
 | 2026-10-31 | #101 | F-07 stays `[x]` | `pnpm/action-setup` 6.0.10 → 6.1.0 (minor). No behavior change for this repository: both versions read `packageManager` and pin the same action by SHA. |
 | 2026-10-31 | docs/tollcraft-shape | — (README) | Matched the reference README exactly: dropped the `## Contents` block (the Tollcraft README has none — the GitHub outline already gives the same navigation), and replaced the socials placeholder comment with the real community links, Discord (`discord.gg/4WFU6fwPe`) and Telegram (`t.me/Pactwright`). No other content changed. |
 | 2026-10-31 | fix/pnpm-version-dup | F-07 stays `[x]` | `release.yml` and `e2e-testnet.yml` dropped their `version: 9` input to `pnpm/action-setup` v6. The workflow contradicted `package.json` (`"packageManager": "pnpm@10.34.7"`), so the action aborted with *Multiple versions of pnpm specified* before installing anything: `release` has failed on every push since `f6a5af9` (confirmed on `b39e236` and `01771d1`), and the nightly `e2e-testnet` would have failed the same way. With the input gone the action reads the pinned `packageManager`, like the other five workflows already did. |
