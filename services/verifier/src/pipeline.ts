@@ -45,6 +45,8 @@ export interface PipelineOptions {
   settledLedger?: number;
   /** Public base URL serving `/v1/envelopes/<sha256>`, used in envelope references. */
   envelopeBaseUrl?: string;
+  /** How long to wait for the seller's delivery challenge answer. */
+  nonDeliveryTimeoutMs?: number;
 }
 
 export function parseDeliveryHeader(header: string): { bodySha256: string; signature: string } | null {
@@ -113,7 +115,10 @@ export async function runPipeline(
   // 1. Delivery receipt check
   if (!deliveryReceipt) {
     // Challenge seller for delivery receipt
-    const challengeRes = await challengeNonDelivery(terms.pactId, { fetchImpl: options?.fetchImpl });
+    const challengeRes = await challengeNonDelivery(terms.pactId, {
+      fetchImpl: options?.fetchImpl,
+      timeoutMs: options?.nonDeliveryTimeoutMs,
+    });
     if (challengeRes.status === "delivered" && challengeRes.deliveryReceipt) {
       deliveryReceipt = challengeRes.deliveryReceipt;
     } else {

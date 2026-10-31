@@ -458,6 +458,36 @@ describe("Verifier Engine Pipeline", () => {
       expect(res.deliveryReceipt).toBe(validReceipt);
     });
 
+    // Issue 116: NON_DELIVERY_TIMEOUT_SEC was parsed, defaulted to 300 and asserted in a test that
+    // only checked the parse — nothing ever passed it to the client, so the effective deadline stayed
+    // the hard-coded 5 s. These two tests are the wiring, not the constant.
+    it("aborts the challenge on the deadline it is given, not on the 5 s default", async () => {
+      const previous = process.env.SELLER_WEBHOOK_URL;
+      process.env.SELLER_WEBHOOK_URL = "https://seller.test/webhook";
+      const hangingFetch = vi.fn<typeof fetch>(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(new Error("The operation was aborted")));
+          }),
+      );
+      const started = Date.now();
+      try {
+        const res = await runPipeline(
+          { terms: mockTerms, evidence: [], milestone: "delivery" },
+          { verifierKey, fetchImpl: hangingFetch, nonDeliveryTimeoutMs: 25 },
+        );
+        const elapsed = Date.now() - started;
+        expect(res).not.toBe("no-verdict");
+        if (res !== "no-verdict") expect(res.envelope.verdict.decision).toBe("DENY");
+        expect(hangingFetch).toHaveBeenCalledTimes(1);
+        // 5 s is what the client falls back to when nothing is passed; 25 ms is what was configured.
+        expect(elapsed).toBeLessThan(2_000);
+      } finally {
+        if (previous === undefined) delete process.env.SELLER_WEBHOOK_URL;
+        else process.env.SELLER_WEBHOOK_URL = previous;
+      }
+    });
+
     it("returns 'deny' on seller silence / timeout / failure", async () => {
       const mockFetch = vi.fn<typeof fetch>(async () =>
         new Response(JSON.stringify({ error: "No delivery available" }), { status: 404 }),
