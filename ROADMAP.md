@@ -104,6 +104,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-31 | #103 | F-07 stays `[x]` | @changesets/cli 2.31.1 → 3.0.3 (dev dependency, release tooling). |
 | 2026-10-31 | #102 | F-07 stays `[x]` | `vitest` 4.1.12 → 5.0.5 (dev dependency). The suite is the gate: `pnpm test` on this branch is the evidence. |
 | 2026-10-31 | #101 | F-07 stays `[x]` | `pnpm/action-setup` 6.0.10 → 6.1.0 (minor). No behavior change for this repository: both versions read `packageManager` and pin the same action by SHA. |
 | 2026-10-31 | docs/tollcraft-shape | — (README) | Matched the reference README exactly: dropped the `## Contents` block (the Tollcraft README has none — the GitHub outline already gives the same navigation), and replaced the socials placeholder comment with the real community links, Discord (`discord.gg/4WFU6fwPe`) and Telegram (`t.me/Pactwright`). No other content changed. |
