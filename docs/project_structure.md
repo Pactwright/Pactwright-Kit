@@ -176,6 +176,7 @@ pactwright-kit/
 │   └── verifier/
 │       ├── src/
 │       │   ├── server.ts         Hono: /v1/verdicts, /v1/envelopes/:sha256, /health
+│       │   ├── metrics.ts        verdict request/failure counters reported on /health (XC-03)
 │       │   ├── pipeline.ts       delivery receipt → evidence hash → model → rules → sign
 │       │   ├── rules/            one deterministic rule set per condition kind
 │       │   │   └── document-translation.ts   MVP's only kind

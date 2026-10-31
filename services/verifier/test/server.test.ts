@@ -30,12 +30,29 @@ function fakePipeline(sha: string): () => Promise<PipelineResult> {
 const post = (app: ReturnType<typeof createApp>, body: unknown) =>
   app.request("/v1/verdicts", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } });
 
+interface Counters {
+  verdictRequests: number;
+  verdictFailures: number;
+}
+
+async function counters(app: ReturnType<typeof createApp>): Promise<Counters> {
+  const res = await app.request("/health");
+  const body = (await res.json()) as Counters;
+  return { verdictRequests: body.verdictRequests, verdictFailures: body.verdictFailures };
+}
+
 describe("verifier HTTP API", () => {
   it("GET /health reports the signing key", async () => {
     const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: runPipeline });
     const res = await app.request("/health");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, verifier: G, verifierHex: key.rawPublicKey().toString("hex") });
+    expect(await res.json()).toEqual({
+      ok: true,
+      verifier: G,
+      verifierHex: key.rawPublicKey().toString("hex"),
+      verdictRequests: 0,
+      verdictFailures: 0,
+    });
   });
 
   it("GET /health says where envelopes are kept", async () => {
@@ -93,6 +110,61 @@ describe("verifier HTTP API", () => {
     const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: runPipeline });
     expect((await app.request("/v1/envelopes/xyz")).status).toBe(400);
     expect((await app.request(`/v1/envelopes/${"e".repeat(64)}`)).status).toBe(404);
+  });
+});
+
+/** The numbers behind the `verifier_error_rate` probe (ROADMAP XC-03). */
+describe("verdict counters on /health", () => {
+  it("counts a served verdict and its idempotent retry as one request and no failure", async () => {
+    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: fakePipeline("a".repeat(64)) });
+    expect((await post(app, { terms, evidence })).status).toBe(201);
+    expect((await post(app, { terms, evidence })).status).toBe(409);
+    expect(await counters(app)).toEqual({ verdictRequests: 1, verdictFailures: 0 });
+  });
+
+  it("counts no request that never reached the pipeline", async () => {
+    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: fakePipeline("b".repeat(64)) });
+    expect((await post(app, { terms })).status).toBe(400);
+    expect((await post(app, "nope")).status).toBe(400);
+    expect(await counters(app)).toEqual({ verdictRequests: 0, verdictFailures: 0 });
+  });
+
+  it("counts a model refusal as a verdict the verifier answered", async () => {
+    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: async () => "no-verdict" });
+    expect((await post(app, { terms, evidence })).status).toBe(202);
+    expect(await counters(app)).toEqual({ verdictRequests: 1, verdictFailures: 0 });
+  });
+
+  it("counts a crash in the pipeline as a failure, which is the 500 /health reported", async () => {
+    const app = createApp({
+      verifierKey: key,
+      store: new MemoryVerdictStore(),
+      pipeline: async () => {
+        throw new Error("model provider exploded");
+      },
+    });
+    expect((await post(app, { terms, evidence })).status).toBe(500);
+    expect((await post(app, { terms, evidence })).status).toBe(500);
+    expect(await counters(app)).toEqual({ verdictRequests: 2, verdictFailures: 2 });
+  });
+
+  it("counts an unimplemented condition kind as a failure to serve", async () => {
+    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: () => { throw new NotImplementedError("V-02"); } });
+    expect((await post(app, { terms, evidence })).status).toBe(501);
+    expect(await counters(app)).toEqual({ verdictRequests: 1, verdictFailures: 1 });
+  });
+
+  it("counts a failed envelope write as a failure", async () => {
+    const store: VerdictStore = {
+      get: async () => undefined,
+      find: async () => undefined,
+      put: async () => {
+        throw new Error("database is read-only");
+      },
+    };
+    const app = createApp({ verifierKey: key, store, pipeline: fakePipeline("9".repeat(64)) });
+    expect((await post(app, { terms, evidence })).status).toBe(500);
+    expect(await counters(app)).toEqual({ verdictRequests: 1, verdictFailures: 1 });
   });
 });
 
