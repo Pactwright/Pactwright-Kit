@@ -116,33 +116,37 @@ describe("Pactwright MCP Server", () => {
     expect(parsed.body).toBe("Translation completed");
   });
 
-  it("calls pactwright_get_pact tool", async () => {
+  // Both tools used to answer with invented data — `state: "settled"`, `disputeStatus: "submitted"` —
+  // and these tests pinned that. An agent reading them would have believed a refund had happened, or
+  // that a dispute it never filed was filed. They refuse instead; that is what is asserted now.
+  it("pactwright_get_pact refuses instead of inventing a pact state", async () => {
     const { client } = await createConnectedClient(mockAgent);
     const res = await client.callTool({
       name: "pactwright_get_pact",
       arguments: { pactId: "01".repeat(32) },
     });
 
-    expect(res.isError).toBeFalsy();
-    const content = getTextContent(res);
-    const parsed = JSON.parse(content.text);
-    expect(parsed.pactId).toBe("01".repeat(32));
-    expect(parsed.state).toBe("settled");
-    expect(parsed.timeline).toBeDefined();
+    expect(res.isError).toBe(true);
+    const parsed = JSON.parse(getTextContent(res).text);
+    expect(parsed.error).toContain("no pact-state read is wired");
+    // The fabricated answer this replaced: a state and a timeline, none of it read from anywhere.
+    expect(parsed.state).toBeUndefined();
+    expect(parsed.timeline).toBeUndefined();
   });
 
-  it("calls pactwright_dispute tool", async () => {
+  it("pactwright_dispute refuses instead of reporting a dispute that was never filed", async () => {
     const { client } = await createConnectedClient(mockAgent);
     const res = await client.callTool({
       name: "pactwright_dispute",
       arguments: { pactId: "01".repeat(32), reason: "Output was unreadable" },
     });
 
-    expect(res.isError).toBeFalsy();
-    const content = getTextContent(res);
-    const parsed = JSON.parse(content.text);
-    expect(parsed.pactId).toBe("01".repeat(32));
-    expect(parsed.disputeStatus).toBe("submitted");
+    expect(res.isError).toBe(true);
+    const parsed = JSON.parse(getTextContent(res).text);
+    expect(parsed.error).toContain("did not file anything");
+    // No disputeStatus, no submittedAt: the tool must not report a filing that did not happen.
+    expect(parsed.disputeStatus).toBeUndefined();
+    expect(parsed.submittedAt).toBeUndefined();
   });
 
   it("calls pactwright_get_certificate tool", async () => {

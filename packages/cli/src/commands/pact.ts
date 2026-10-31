@@ -35,34 +35,16 @@ export async function pact(args: string[], options?: PactCommandOptions): Promis
 
   try {
     const res = await doFetch(url);
-    if (res.ok) {
-      data = (await res.json()) as PactDetails;
-    } else {
-      // Fallback display if studio/indexer not reachable
-      data = {
-        pactId,
-        state: "settled",
-        mode: "exact-refund",
-        timeline: [
-          { stage: "opened", timestamp: new Date().toISOString() },
-          { stage: "paid", timestamp: new Date().toISOString() },
-          { stage: "verdict", timestamp: new Date().toISOString() },
-          { stage: "settled", timestamp: new Date().toISOString() },
-        ],
-      };
-    }
-  } catch {
-    data = {
-      pactId,
-      state: "settled",
-      mode: "exact-refund",
-      timeline: [
-        { stage: "opened", timestamp: new Date().toISOString() },
-        { stage: "paid", timestamp: new Date().toISOString() },
-        { stage: "verdict", timestamp: new Date().toISOString() },
-        { stage: "settled", timestamp: new Date().toISOString() },
-      ],
-    };
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    data = (await res.json()) as PactDetails;
+  } catch (err) {
+    // Inventing a settled timeline here reported today's clock as the pact's history and told the
+    // caller the money had moved. A failed read is reported as a failed read.
+    errorLog(`Could not read pact ${pactId} from ${url}: ${err instanceof Error ? err.message : String(err)}`);
+    log(`Pact:     ${pactId}`);
+    log("State:    unknown");
+    process.exitCode = 1;
+    return;
   }
 
   log(`Pact:     ${data.pactId}`);
