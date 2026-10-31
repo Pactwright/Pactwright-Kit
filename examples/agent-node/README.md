@@ -9,6 +9,7 @@ Initiates an automated pact purchase against a seller endpoint, generates determ
 1. An agent account funded with testnet USDC.
    - You can create and fund an agent account using the CLI:
      ```bash
+     pnpm --filter @pactwright/cli build
      pnpm --filter @pactwright/cli run pactwright agent-create --sponsor-secret <sponsor-secret>
      ```
 

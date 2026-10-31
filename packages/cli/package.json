@@ -12,7 +12,8 @@
   },
   "scripts": {
     "test": "vitest run --root ../.. --dir .",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "pactwright": "node ./dist/index.js"
   },
   "dependencies": {
     "@pactwright/core": "workspace:*",
