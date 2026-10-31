@@ -3,31 +3,42 @@
 Witness-compatible verifier: delivery receipt → evidence hash → model reads → **rules decide**
 → signed verdict-v1 envelope (+ one attestation per pact for escrow). ARCHITECTURE §6.5.
 
-## Testnet Deployment (ROADMAP V-10)
+## Testnet deployment (ROADMAP V-10)
 
-Not deployed yet. The verifier is hosted on Render from [`render.yaml`](../../render.yaml) at the
-repo root (service `pactwright-verifier-testnet`, next to the facilitator). Its public URL goes
-here, and into `VERIFIER_URL` defaults, once the first deploy is live.
+Hosted on Render at **https://pactwright-verifier-testnet.onrender.com** (service
+`pactwright-verifier-testnet`, defined in [`render.yaml`](../../render.yaml) next to the facilitator).
+A verdict it signed has been accepted on-chain by `record_verdict`: see
+[the hosted verifier](../../README.md#the-hosted-verifier) in the Kit README. Full setup guide:
+[Run a verifier](https://pactwright.github.io/docs/guides/verifier/).
+
+To deploy your own:
 
 1. Render Dashboard → **New → Blueprint** → this repo. Render reads `render.yaml`.
-2. Fill in the `sync: false` secrets when asked. They stay in Render's secret store:
-   - `VERIFIER_SECRET_KEY`: the key the `pact` contract is configured with (`4efdaeb6…e4ff`).
+2. Fill in the `sync: false` values when asked. They stay in Render's secret store:
+   - `VERIFIER_SECRET_KEY`: the key the `pact` contract is configured with (`4efdaeb6…e4ff` on testnet).
    - `VERIFIER_PROVIDER`, `VERIFIER_MODEL`, `VERIFIER_EFFORT`: the pinned provider, model and
      effort. There is no default model.
    - `VERIFIER_LLM_API_KEY`, and `LLM_BASE_URL` if the provider isn't the adapter's default.
      The adapter speaks the OpenAI-compatible `chat/completions` API.
    - `FACILITATOR_URL`: the facilitator service's public URL.
    - `EVIDENCE_BUCKET_URL`: an https prefix the verifier can read. Evidence URIs must resolve
-     under it; anything else is refused before any fetch.
-3. Check that `GET <url>/health` returns `verifierHex` `4efdaeb6…e4ff`.
+     under it; anything else is refused before any fetch. On testnet this is the public
+     [`pactwright-evidence`](https://github.com/Pactwright/pactwright-evidence) repository.
+   - `DATABASE_URL`: Postgres for verdict envelopes. The image runs with `NODE_ENV=production`,
+     which refuses to start without it.
+   `STELLAR_RPC_URL` is set in `render.yaml`; each escrow attestation is stamped with its latest
+   ledger. Envelope links point at `RENDER_EXTERNAL_URL` (set by Render) unless
+   `VERIFIER_PUBLIC_URL` is set.
+3. Check that `GET <url>/health` returns the expected `verifierHex` and `"store":"postgres"`.
 
-The process refuses to start, listing every problem, if the model, its API key, the verifier key
-or the evidence bucket is missing: it never invents a reading.
+The process refuses to start, listing every problem, if the model, its API key, the verifier key,
+the evidence bucket, the RPC or (in production) the database is missing: it never invents a reading.
 
 Endpoints: `GET /health`, `GET /v1/envelopes/:sha256`, `POST /v1/verdicts`.
 
-The envelope store is in memory: a restart or redeploy forgets stored envelopes (the contract's
-one-attestation-per-pact rule still holds on-chain).
+Envelopes are stored in Postgres (`verifier_envelopes`, one row per pact and milestone), so a
+restart or redeploy keeps them and their links keep resolving. Without a database (local runs
+only) they're kept in memory.
 
 ### Container Build & Run
 
@@ -42,12 +53,15 @@ docker run -p 10000:10000 \
   -e VERIFIER_LLM_API_KEY=<api-key> \
   -e FACILITATOR_URL=<facilitator-url> \
   -e EVIDENCE_BUCKET_URL=<https-evidence-prefix> \
+  -e STELLAR_RPC_URL=https://soroban-testnet.stellar.org \
+  -e VERIFIER_PUBLIC_URL=http://localhost:10000 \
+  -e DATABASE_URL=<postgres-url> \
   pactwright-verifier
 ```
 
 ```bash
 curl http://localhost:10000/health
-# {"ok":true,"verifier":"G...","verifierHex":"..."}
+# {"ok":true,"verifier":"G...","verifierHex":"...","store":"postgres"}
 ```
 
 ---
