@@ -32,30 +32,6 @@
 > [Testnet evidence](#-testnet-evidence), then
 > [What "Supported" means here](#what-supported-means-here) for what CI actually proves.
 
-## Contents
-
-1. [Overview](#-overview)
-2. [Architecture](#️-architecture)
-3. [Test fixtures and the eval set](#-test-fixtures-and-the-eval-set)
-4. [Testnet evidence](#-testnet-evidence)
-5. [The hosted verifier](#the-hosted-verifier)
-6. [Supported Versions & Compatibility](#️-supported-versions--compatibility)
-7. [What "Supported" means here](#what-supported-means-here)
-8. [Compatibility matrix](#compatibility-matrix)
-9. [Quick Start](#-quick-start)
-10. [1. Installation](#1-installation)
-11. [2. Configuration](#2-configuration)
-12. [3. Usage](#3-usage)
-13. [Measurements](#-measurements)
-14. [Community & Maintainers](#-community--maintainers)
-15. [Contributing](#️-contributing)
-16. [Contributors](#‍-contributors)
-17. [License](#license)
-18. [What Apache-2.0 means for you](#what-apache-20-means-for-you)
-19. [Why Apache-2.0 and not MIT](#why-apache-20-and-not-mit)
-20. [Third-party code and licenses](#third-party-code-and-licenses)
-21. [Contributing under this license](#contributing-under-this-license)
-
 ## 📖 Overview
 
 A pact is an AI agent's purchase held in escrow on Stellar. The buyer locks a cap, a verifier checks
@@ -529,12 +505,14 @@ Test counts, cold-start timings and the Scorecard reading quoted above were meas
 
 ## 🤝 Community & Maintainers
 
+Join the discussion and get support:
+
+- **Discord**: [discord.gg/4WFU6fwPe](https://discord.gg/4WFU6fwPe)
+- **Telegram**: [t.me/Pactwright](https://t.me/Pactwright)
 - **Documentation hub**: [pactwright.github.io/docs](https://pactwright.github.io/docs/)
 - **Issues and pull requests**: [Pactwright-Kit issues](https://github.com/Pactwright/Pactwright-Kit/issues)
 - **Sibling repositories**: [Pactwright-contracts](https://github.com/Pactwright/Pactwright-contracts) (MIT), [Pactwright-studio](https://github.com/Pactwright/Pactwright-studio) (MIT)
 - **Vulnerabilities**: report privately through [SECURITY.md](SECURITY.md), never as a public issue
-<!-- socials: fill in — X, Discord, Telegram and any demo or screencast go here once they exist -->
-
 | Maintainer | Role | Scope |
 |---|---|---|
 | `@Pactwright/maintainers` | Repository owners | Everything not listed below |
