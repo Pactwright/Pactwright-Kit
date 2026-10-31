@@ -2,12 +2,14 @@
 
 > **⚠ Every contribution updates this file:** task status, progress counts and one
 > Update log line. CI (`roadmap-check`) fails PRs that don't. Rules: [`AGENTS.md`](AGENTS.md) §1.
-> Task IDs are global; the master roadmap lives in the Pactwright workspace and is synced weekly (XC-12).
+> Task IDs are global; the master roadmap is
+> [`pactwright.github.io/ROADMAP.md`](https://github.com/Pactwright/pactwright.github.io/blob/main/ROADMAP.md),
+> and CI there (`roadmap-sync`) fails if this file disagrees with it about any status or ID (XC-12).
 
 | | |
 |---|---|
 | Last updated | 2026-10-31 |
-| Progress | **51 / 54 tasks (94%)** |
+| Progress | **54 / 58 tasks (93%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -18,7 +20,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Foundations (this repo) | 7 | 7 | 100% |
 | Phase 3 — Kit | 18 | 17 | 94% |
 | Phase 4 — Verifier | 12 | 12 | 100% |
-| Phase 7 — v1 | 10 | 8 | 80% |
+| Phase 7 — v1 | 12 | 10 | 83% |
+| Phase 8 — v1.1 | 2 | 1 | 50% |
 | Phase 9 — v2 | 7 | 7 | 100% |
 
 ## Foundations (this repo)
@@ -87,6 +90,15 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 - [x] **P7-09** Evidence privacy: retention, redaction hook, disclosure text — wave · M · V-02 · FR-V10 (#73, 2026-10-29)
 - [~] **P7-12** `gate-vespi` adapter: Vespi approves the budget — wave · H · K-13, F-08 · FR-A4 — reopened: approved up to 100 USDC when Vespi was unreachable and invented funding tx IDs; now fails closed. Untested against Vespi's real API (F-08)
 - [~] **P7-13** `wallet-pollar` adapter: principal funds the agent from Pollar; answer Q1 — wave · H · K-13, F-09 · FR-A4 — reopened: returned the unsigned entry when Pollar failed; now throws. Untested against Pollar's real API (F-09)
+- [x] **P7-14** M0 on mainnet via a production facilitator (config + pubnet guard) — core · M · L-05 · ARCH §12 (#73, 2026-10-29)
+- [x] **P7-15** Apply the Q5 outcome: seller vault merchant as a smart account whose middleware key can sign only `refund` (KMS until then) — core · M · F-12 (#73, 2026-10-29)
+
+## Phase 8 — v1.1
+
+Mainnet operation of the pieces this repo runs: the verifier and the end-to-end suite.
+
+- [x] **P8-05** Mainnet verifier operation and key policy; answer Q4 — core · M · V-10 · Q4 (#73, 2026-10-29)
+- [ ] **P8-07** Re-run every e2e scenario on pubnet with small amounts — core · M · P8-03 — blocked on the pubnet deploy (P8-03), which has not happened
 
 ## Phase 9 — v2
 
@@ -104,6 +116,7 @@ Metering, disputes, Hono, KMS, privacy, add-ons.
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-10-31 | — | P7-14, P7-15, P8-05, P8-07 given a home here | The **XC-12** sync audit found 41 master tasks that no repo roadmap listed, so a contributor scanning this repo could not see work that is actually this repo's. Four of them are Kit's and are rows here now: `P7-14` (production-facilitator config + pubnet guard, #73), `P7-15` (Q5 outcome: the seller vault merchant is a smart account whose middleware key signs only `refund`, #73), `P8-05` (mainnet verifier operation and key policy, #73) and a new **Phase 8 — v1.1** section holding `P8-07` (re-run every e2e scenario on pubnet) as `[ ]` — blocked on `P8-03`, the pubnet deploy, which has not happened, so it is tracked rather than faked. Statuses are copied from the master and the new `roadmap-sync` CI job in `pactwright.github.io` fails if they ever drift. Phase 7 10/12 (83%), Phase 8 1/2, this repo 54/58 (93%). The header now points at the master's real home instead of at "the workspace, synced weekly", which is what XC-12 was before a check existed. |
 | 2026-10-31 | #107 | F-07 stays `[x]` | @hono/node-server 1.19.17 → 2.1.5 (runtime, verifier HTTP server). The verifier's tests and image build on this branch are the evidence. |
 | 2026-10-31 | #106 | F-07 stays `[x]` | typescript 5.9.3 → 6.0.3 (dev dependency). Typecheck and test on this branch are the evidence. |
 | 2026-10-31 | #105 | F-07 stays `[x]` | eslint 9.39.5 → 10.13.0 (dev dependency). |
