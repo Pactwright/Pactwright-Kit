@@ -136,6 +136,8 @@ export async function startServer(config: VerifierConfig): Promise<ReturnType<ty
         verifierKey: config.verifierKey,
         modelAdapter,
         evidenceLoader,
+        // NON_DELIVERY_TIMEOUT_SEC is seconds; the client's abort deadline is milliseconds.
+        nonDeliveryTimeoutMs: config.nonDeliveryTimeoutSec * 1000,
         ledgerSeq: await currentLedger(config.rpcUrl),
         envelopeBaseUrl: config.publicUrl,
       }),

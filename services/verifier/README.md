@@ -88,6 +88,7 @@ Stellar ledgers close approximately every 5 seconds.
 
 - **`verdictLedgers` = 120 ledgers (~10 minutes / 600 seconds)**:
   Provides a safe >100× safety margin over p95 model reading latency (~2.5s) to accommodate provider network jitter, rate limiting, and seller non-delivery challenge webhooks.
+- **`NON_DELIVERY_TIMEOUT_SEC` (default 300)**: how long the verifier waits for the seller's delivery-receipt webhook before it denies. It is a **deadline for an unresponsive webhook**, not a budget for a slow model — the request is aborted at the deadline and the pact is denied, so set it to what your seller endpoints need. The value is seconds; the HTTP abort is milliseconds (`config.nonDeliveryTimeoutSec * 1000` in `src/server.ts`), and before 2026-10-31 the seconds value was parsed and never applied, so every challenge used a hard-coded 5 s.
 - **`settleLedgers` = 720 ledgers (~60 minutes / 3600 seconds)**:
   Provides a 1-hour window for the buyer or seller to settle the pact on-chain before the automatic release/refund grace period takes effect.
 
