@@ -36,6 +36,11 @@ the evidence bucket, the RPC or (in production) the database is missing: it neve
 
 Endpoints: `GET /health`, `GET /v1/envelopes/:sha256`, `POST /v1/verdicts`.
 
+`GET /health` also reports `verdictRequests` (verdicts this process was asked to decide) and
+`verdictFailures` (of those, the ones that ended in a 5xx). A 400 is the caller's mistake and a
+409 says "already decided", so neither is counted; Studio's `/api/ops/health` turns the ratio into
+the `verifier_error_rate` alert (ROADMAP XC-03).
+
 Envelopes are stored in Postgres (`verifier_envelopes`, one row per pact and milestone), so a
 restart or redeploy keeps them and their links keep resolving. Without a database (local runs
 only) they're kept in memory.

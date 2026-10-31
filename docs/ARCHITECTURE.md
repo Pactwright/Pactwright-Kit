@@ -367,7 +367,7 @@ USDC trustline at startup. Keys come from KMS (B13).
 - **Rules:** each condition kind has a pure rule set; criteria use Witness reason codes and Witness's `decide()` makes the decision. Witness's REVIEW outcome becomes DENY (no human review in the MVP). `document.translation` pays pro rata when fewer pages than `minPages` arrive (non-mandatory `ITEMS_MISMATCH`).
 - **A model refusal yields no verdict:** the pact falls back to its silence policy (escrow) or no refund decision (M0) instead of a guess.
 - **At most one attestation per `pact_id`** (unique key in its store). Disputes create new envelopes, never new attestations.
-- `GET /v1/envelopes/:sha256`, `GET /health` (public key).
+- `GET /v1/envelopes/:sha256`, `GET /health` (public key, store kind, and the verdict counters — requests the verifier tried to decide and how many of those it failed with a 5xx — that feed the `verifier_error_rate` ops probe, XC-03).
 - Evidence privacy: retention limit, redaction hook, configurable model region; terms tell buyers what is sent to the model.
 
 ### 6.6 Indexer and anchorer (studio)
