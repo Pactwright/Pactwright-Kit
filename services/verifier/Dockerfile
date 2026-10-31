@@ -1,5 +1,8 @@
 # Verifier service production image (ROADMAP V-10)
-FROM node:24-slim AS runner
+# Pinned by digest for OpenSSF Scorecard Pinned-Dependencies; dependabot.yml has a `docker`
+# ecosystem entry for this directory, so the digest is refreshed weekly rather than frozen.
+# Digest of node:24-slim as resolved by the scorecard scan of 2026-10-30.
+FROM node:24-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c AS runner
 
 WORKDIR /app
 

@@ -8,3 +8,9 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+  # The verifier image's base is pinned by digest (Scorecard Pinned-Dependencies); this keeps the
+  # digest moving instead of freezing it.
+  - package-ecosystem: docker
+    directory: "/services/verifier"
+    schedule:
+      interval: weekly

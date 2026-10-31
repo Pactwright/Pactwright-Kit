@@ -11,14 +11,18 @@ on:
   schedule:
     - cron: "0 6 * * 1"
 
+# OpenSSF Scorecard Token-Permissions: reads the repo and posts artifacts; the real-model job
+# authenticates to the model through secrets, not through the GITHUB_TOKEN.
+permissions: read-all
+
 jobs:
   run:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -33,9 +37,9 @@ jobs:
     timeout-minutes: 30
     environment: verifier-eval
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -53,7 +57,7 @@ jobs:
           EVAL_CASE_DELAY_MS: ${{ vars.EVAL_CASE_DELAY_MS }}
         run: node services/verifier/eval/real/run.ts --out real-model-report.json
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: real-model-report
           path: real-model-report.json
