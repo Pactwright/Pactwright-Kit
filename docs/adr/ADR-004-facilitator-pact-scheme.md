@@ -1,4 +1,8 @@
-# ADR-016: Facilitator `pact` Scheme and `/pact/submit`
+# ADR-004: Facilitator `pact` Scheme and `/pact/submit`
+
+> **Local copy, not a new decision.** The canonical text is [`pactwright-contracts/docs/adr/ADR-004.md`](https://github.com/Pactwright/pactwright-contracts/blob/main/docs/adr/ADR-004.md), and this repo's own [ARCHITECTURE.md](../ARCHITECTURE.md) §15 Decision log has always listed this decision as ADR-004. What this copy adds is the facilitator-side detail below: the `/verify` rules, the `/settle` sponsorship and the allow-list.
+>
+> This file was numbered **ADR-016**, which collided with that ADR-004 — ADR numbers are global across the three repos. **016 is retired, not free**: contracts' ADR-017 was numbered past it precisely because this file held 016, so reusing the number would recreate the collision. The next free ADR number in the org is **018**.
 
 ## Status
 Accepted (Phase 2, ROADMAP X-01, ARCHITECTURE §6.4).

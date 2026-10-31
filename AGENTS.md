@@ -40,6 +40,12 @@ Any change to behavior described in the design docs needs an ADR in `docs/adr/` 
 the code, and the same PR updates `PRD.md` / `ARCHITECTURE.md` /
 `ARCHITECTURE_ESSENTIALS.md` / `project_structure.md` as needed, plus `ROADMAP.md`.
 
+**ADR numbers are global**, not per-repo: one sequence shared by `pactwright-contracts`,
+`pactwright-kit` and `pactwright-studio`, indexed in `ARCHITECTURE.md` §15 Decision log. Before
+naming a new ADR, list `docs/adr/` in all three repos and take the highest number used plus one — a
+copy of an existing decision keeps that decision's number and says which repo holds the canonical
+text, it does not get a fresh number for the copy.
+
 ## 5. Core-team-only paths
 Do not open Drips Wave issues for, and do not let Wave contributors change without core
 review: `lifecycle.rs`, `verdict.rs`, `meter.rs`, `hashing.rs`, `services/verifier/src/sign.ts`,
