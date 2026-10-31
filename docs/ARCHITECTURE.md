@@ -311,7 +311,7 @@ Credit: Ficha proved per-unit refunds of unused time on Stellar; this is the pay
 - Verifier silent past `verdict_deadline` → `Silence::Refund` (default) lets anyone `release`; `Silence::Pay` lets the seller `settle` up to `cap`. The buyer sees the policy in the 402 before paying.
 
 ### 5.5 Disputes (post-terminal, both modes)
-- `pactwright_dispute` asks the verifier to re-verify (milestone `dispute-<n>`), with a bounded window (`refundWindowLedgers`).
+- `pactwright_dispute` is meant to ask the verifier to re-verify (milestone `dispute-<n>`, bounded by `refundWindowLedgers`) — **not wired yet**: `VerdictInput` has no `milestone`, so the tool refuses rather than reporting a filing that did not happen. `pactwright_get_pact` likewise refuses until the agent can read pact state (`get_pact` on the contract client).
 - A reversed verdict produces a refund through the seller's `RefundVault` (seller-cooperative in both modes; on-chain verdicts are final).
 - Every refund is a new `Refunded` receipt leaf.
 
