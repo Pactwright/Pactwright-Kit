@@ -49,5 +49,5 @@ jobs:
           set +e
           out=$(docker run --rm pactwright-verifier:ci 2>&1); code=$?
           echo "$out"
-          test "$code" -ne 0 || { echo "expected non-zero exit code"; exit 1; }
-          echo "$out" | grep -q "VERIFIER_SECRET_KEY is required"
+          test "$code" -ne 0 && echo "$out" | grep -q "VERIFIER_SECRET_KEY is not set" \
+            && echo "$out" | grep -q "DATABASE_URL is not set"
