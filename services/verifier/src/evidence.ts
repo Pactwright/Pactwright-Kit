@@ -19,6 +19,7 @@ export class EvidenceFetchError extends Error {
 export interface EvidenceLoaderOptions {
   fetchImpl?: typeof fetch;
   maxBytes?: number;
+  timeoutMs?: number;
 }
 
 /** Relative URIs resolve under the bucket; anything that resolves outside it is refused. */
@@ -33,6 +34,7 @@ export function createEvidenceLoader(
   const prefix = base.href.endsWith("/") ? base.href : `${base.href}/`;
   const fetchImpl = options?.fetchImpl ?? globalThis.fetch;
   const maxBytes = options?.maxBytes ?? DEFAULT_MAX_EVIDENCE_BYTES;
+  const timeoutMs = options?.timeoutMs ?? 10_000;
 
   return async (item) => {
     let target: URL;
@@ -44,10 +46,24 @@ export function createEvidenceLoader(
     if (!target.href.startsWith(prefix)) {
       throw new EvidenceFetchError(`evidence URI is outside the evidence bucket: ${item.uri}`);
     }
-    const res = await fetchImpl(target, { redirect: "error" });
+    const signal = AbortSignal.timeout(timeoutMs);
+    let res: Response;
+    try {
+      res = await fetchImpl(target, { redirect: "error", signal });
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "TimeoutError") {
+        throw new EvidenceFetchError(`evidence fetch timed out after ${timeoutMs}ms for ${item.uri}`);
+      }
+      throw err;
+    }
     if (!res.ok) throw new EvidenceFetchError(`evidence fetch failed: HTTP ${res.status} for ${item.uri}`);
-    const declared = Number(res.headers.get("content-length") ?? "0");
-    if (declared > maxBytes) throw new EvidenceFetchError(`evidence is larger than ${maxBytes} bytes: ${item.uri}`);
+    const rawDeclared = res.headers.get("content-length");
+    if (rawDeclared !== null) {
+      const declared = Number(rawDeclared);
+      if (!Number.isNaN(declared) && declared > maxBytes) {
+        throw new EvidenceFetchError(`evidence is larger than ${maxBytes} bytes: ${item.uri}`);
+      }
+    }
     const data = new Uint8Array(await res.arrayBuffer());
     if (data.byteLength > maxBytes) throw new EvidenceFetchError(`evidence is larger than ${maxBytes} bytes: ${item.uri}`);
     return data;

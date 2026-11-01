@@ -78,4 +78,28 @@ describe("MeterHook (P7-03)", () => {
       signature: sig,
     });
   });
+
+  it("closes meter via facilitator submit response shape with apiKey", async () => {
+    let authHeader: string | undefined;
+
+    const mockFetch: typeof fetch = async (_url, init) => {
+      authHeader = (init?.headers as Record<string, string>)?.["Authorization"];
+      return new Response(JSON.stringify({ success: true, transaction: "tx_submit_shape" }), { status: 200 });
+    };
+
+    const hook = createMeterHook({
+      facilitatorUrl: "https://test-facilitator.local",
+      fetchImpl: mockFetch,
+      apiKey: "secret_seller_key",
+    });
+
+    const voucher = { pactId, units: 100 };
+    const sig = buyer.sign(Buffer.from(usageMessage(voucher))).toString("base64");
+    await hook.onUsageVoucher(pactId, { units: 100, signature: sig }, buyer.publicKey());
+
+    const result = await hook.closeMeter(pactId);
+    expect(result.closed).toBe(true);
+    expect(result.txHash).toBe("tx_submit_shape");
+    expect(authHeader).toBe("Bearer secret_seller_key");
+  });
 });

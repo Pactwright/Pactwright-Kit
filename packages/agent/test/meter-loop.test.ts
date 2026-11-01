@@ -46,4 +46,40 @@ describe("startMeterLoop (P7-02)", () => {
     loop.stop();
     expect(loop.isActive()).toBe(false);
   });
+
+  it("fires periodically with intervalMs", async () => {
+    const vouchers: number[] = [];
+    const loop = startMeterLoop(pactId, "0.01", "0.50", {
+      signerKeypair: keypair,
+      intervalMs: 15,
+      onVoucher: (v) => {
+        vouchers.push(v.voucher.units);
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 65));
+    loop.stop();
+    expect(vouchers.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("serializes concurrent ticks with inFlight guard", async () => {
+    let inFlightCount = 0;
+    let maxConcurrent = 0;
+
+    const loop = startMeterLoop(pactId, "0.01", "0.50", {
+      signerKeypair: keypair,
+      onVoucher: async () => {
+        inFlightCount++;
+        maxConcurrent = Math.max(maxConcurrent, inFlightCount);
+        await new Promise((r) => setTimeout(r, 20));
+        inFlightCount--;
+      },
+    });
+
+    const [v1, v2] = await Promise.all([loop.tick(1), loop.tick(1)]);
+    expect(maxConcurrent).toBe(1);
+    expect(v1.voucher.units).toBe(1);
+    expect(v2.voucher.units).toBe(1);
+    loop.stop();
+  });
 });
