@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@pactwright/adapters": "workspace:*",
+    "@pactwright/contracts-client": "workspace:*",
     "@pactwright/core": "workspace:*",
     "@stellar/stellar-base": "^15.0.0",
     "@stellar/stellar-sdk": "^16.4.1",

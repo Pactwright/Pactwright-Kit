@@ -15,7 +15,9 @@ projects:
             branch: main
             plan: free
             healthCheckPath: /healthz
-            autoDeployTrigger: checksPass
+            # Kit#127: autoDeployTrigger: checksPass does not trigger on free-tier webhook payloads.
+            # Testnet deploys are manual: `render deploys create srv-dbhk2i0n74is73e8cio0 --confirm`
+            autoDeploy: false
             envVars:
               - key: NETWORK
                 value: stellar:testnet
@@ -39,7 +41,9 @@ projects:
             dockerContext: .
             plan: free
             healthCheckPath: /health
-            autoDeployTrigger: checksPass
+            # Kit#127: autoDeployTrigger: checksPass does not trigger on free-tier webhook payloads.
+            # Testnet deploys are manual: `render deploys create srv-dbhk2i0n74is73e8cimg --confirm`
+            autoDeploy: false
             envVars:
               # The key the `pact` contract is configured with (4efdaeb6…e4ff).
               - key: VERIFIER_SECRET_KEY

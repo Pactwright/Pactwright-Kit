@@ -137,6 +137,9 @@ importers:
       '@pactwright/adapters':
         specifier: workspace:*
         version: link:../adapters
+      '@pactwright/contracts-client':
+        specifier: workspace:*
+        version: link:../contracts-client
       '@pactwright/core':
         specifier: workspace:*
         version: link:../core

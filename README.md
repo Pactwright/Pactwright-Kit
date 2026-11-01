@@ -316,6 +316,9 @@ Run it yourself (it needs write access to the evidence store) with
 > [!NOTE]
 > Free tier: a cold start was measured at **42 s** on the facilitator and **23 s** on the verifier on
 > 2026-10-30. The first call after the service sleeps is slow, not failing.
+> Deploys to testnet are manual (`autoDeploy: false` in `render.yaml` per Kit#127):
+> - Facilitator: `render deploys create srv-dbhk2i0n74is73e8cio0 --confirm`
+> - Verifier: `render deploys create srv-dbhk2i0n74is73e8cimg --confirm`
 
 ## ⚙️ Supported Versions & Compatibility
 

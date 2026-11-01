@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
 import { Keypair } from "@stellar/stellar-base";
 import { signEnvelope, type UnsignedEnvelope } from "@witness/core";
 import { verify, pact, agentCreate, agentTopup } from "../src/index.ts";
@@ -205,6 +207,34 @@ describe("Pactwright CLI Commands", () => {
       });
 
       expect(errors.some((e) => e.includes("usage: pactwright agent-topup"))).toBe(true);
+    });
+  });
+
+  describe("CLI executable entrypoint (ROADMAP K-12, #125)", () => {
+    const cliBin = path.resolve(__dirname, "../dist/index.js");
+
+    it("prints help message with --help", () => {
+      const out = execFileSync(process.execPath, [cliBin, "--help"], { encoding: "utf8" });
+      expect(out).toContain("Usage: pactwright <command> [options]");
+      expect(out).toContain("verify");
+      expect(out).toContain("agent-create");
+      expect(out).toContain("--version");
+    });
+
+    it("prints version with --version", () => {
+      const out = execFileSync(process.execPath, [cliBin, "--version"], { encoding: "utf8" });
+      expect(out.trim()).toBe("0.1.0");
+    });
+
+    it("prints usage error and exits 2 on unknown command", () => {
+      try {
+        execFileSync(process.execPath, [cliBin, "unknown-cmd"], { encoding: "utf8", stdio: "pipe" });
+        expect.unreachable("should fail");
+      } catch (err: unknown) {
+        const error = err as { status?: number; stderr?: Buffer | string };
+        expect(error.status).toBe(2);
+        expect(error.stderr?.toString()).toContain("usage: pactwright <verify|pact|agent-create|agent-topup>");
+      }
     });
   });
 });

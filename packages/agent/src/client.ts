@@ -14,6 +14,8 @@ export interface PactwrightConfig {
   /** Pays for purchases. Default: `x402Payment` with `wallet` (signed auth entries, facilitator-paid fees). */
   payment?: PaymentProvider;
   fetchImpl?: typeof fetch;
+  /** Optional custom pact state reader (e.g. for testing or local simulation). */
+  pactReader?: (pactId: string) => Promise<PactState>;
   adapters: {
     discovery: Discovery;
     reputation: Reputation;
