@@ -12,6 +12,14 @@ Pactwright handles payments. Please report vulnerabilities privately.
 
 We acknowledge reports within 72 hours. Status: pre-release, testnet only; no bounty yet.
 
+## Audit Status Disclaimer
+
+> **Pre-release / Testnet Only**: Pactwright Kit, SDK packages, and verifier service implementations have **not yet undergone an independent formal security audit**. They are deployed for testnet integration. Real mainnet funds should not be committed until formal audits (ROADMAP tasks P8-01 and P8-02) have concluded.
+
+## PR Security Policy
+
+All pull requests are automatically screened by `.github/workflows/pr-malware-guard.yml` against Trojan Source attacks (CVE-2021-42576), malicious shell scripts, raw socket connections, and unvetted binary executables. Lockfiles are strictly checked with frozen-lockfile validation.
+
 ## What we hold ourselves to
 
 Reports that touch money movement — pact funds, refunds, the verifier's signed attestations — are
