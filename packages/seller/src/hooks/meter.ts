@@ -13,6 +13,7 @@ export interface StoredMeterVoucher {
 export interface MeterHookOptions {
   facilitatorUrl?: string;
   fetchImpl?: typeof fetch;
+  apiKey?: string;
 }
 
 export interface CloseMeterResult {
@@ -27,11 +28,13 @@ export class MeterHook {
   private vouchers = new Map<string, StoredMeterVoucher>();
   private facilitatorUrl: string;
   private fetchImpl: typeof fetch;
+  private apiKey?: string;
 
   constructor(options?: MeterHookOptions) {
     this.facilitatorUrl =
       options?.facilitatorUrl ?? process.env.FACILITATOR_URL ?? "https://facilitator.pactwright.dev";
     this.fetchImpl = options?.fetchImpl ?? globalThis.fetch;
+    this.apiKey = options?.apiKey ?? process.env.FACILITATOR_API_KEY;
   }
 
   /**
@@ -101,10 +104,15 @@ export class MeterHook {
       signature: latest.signature,
     };
 
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (this.apiKey) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+
     try {
       const res = await this.fetchImpl(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
 
@@ -118,10 +126,21 @@ export class MeterHook {
         };
       }
 
-      const data = (await res.json()) as { tx_hash?: string; hash?: string };
-      const txHash = data.tx_hash ?? data.hash;
-      if (!txHash) {
-        return { closed: false, pactId, units: latest.units, error: "Facilitator returned no transaction hash for close_meter" };
+      const data = (await res.json().catch(() => ({}))) as {
+        tx_hash?: string;
+        hash?: string;
+        transaction?: string;
+        success?: boolean;
+        errorReason?: string;
+      };
+      const txHash = data.tx_hash ?? data.hash ?? data.transaction;
+      if (!txHash || data.success === false) {
+        return {
+          closed: false,
+          pactId,
+          units: latest.units,
+          error: data.errorReason ?? "Facilitator returned no transaction hash for close_meter",
+        };
       }
       return {
         closed: true,

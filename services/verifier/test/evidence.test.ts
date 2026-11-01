@@ -43,6 +43,29 @@ describe("createEvidenceLoader", () => {
     await expect(createEvidenceLoader("https://e.example/", { fetchImpl: notFound })(item("x"))).rejects.toThrow(/HTTP 404/);
     const { fetchImpl } = recordingFetch("x".repeat(11));
     await expect(createEvidenceLoader("https://e.example/", { fetchImpl, maxBytes: 10 })(item("x"))).rejects.toThrow(/larger/);
+
+    // declared content-length > maxBytes
+    const declaredOversized = (async () => new Response("short", { headers: { "content-length": "200" } })) as typeof fetch;
+    await expect(createEvidenceLoader("https://e.example/", { fetchImpl: declaredOversized, maxBytes: 10 })(item("x"))).rejects.toThrow(/larger than 10 bytes/);
+
+    // malformed content-length does not throw NaN error
+    const malformedHeader = (async () => new Response("short", { headers: { "content-length": "invalid-nan" } })) as typeof fetch;
+    const loaded = await createEvidenceLoader("https://e.example/", { fetchImpl: malformedHeader, maxBytes: 100 })(item("x"));
+    expect(new TextDecoder().decode(loaded)).toBe("short");
+  });
+
+  it("times out on stalled evidence fetch", async () => {
+    const stalledFetch: typeof fetch = async (_input, init) => {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          const err = new Error("aborted");
+          err.name = "TimeoutError";
+          reject(err);
+        });
+      });
+    };
+    const loader = createEvidenceLoader("https://e.example/", { fetchImpl: stalledFetch, timeoutMs: 25 });
+    await expect(loader(item("slow.txt"))).rejects.toThrow(/timed out/);
   });
 
   it("refuses a bucket it can't read over http(s)", () => {

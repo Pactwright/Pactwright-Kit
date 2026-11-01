@@ -18,6 +18,7 @@ export interface MeterLoopOptions {
   intervalMs?: number;
   onVoucher?: (signed: SignedUsageVoucher) => Promise<void> | void;
   onError?: (err: Error) => void;
+  maxRetries?: number;
 }
 
 export interface MeterLoop {
@@ -51,46 +52,66 @@ export function startMeterLoop(
   let latestVoucher: SignedUsageVoucher | null = null;
   let active = true;
   let timer: ReturnType<typeof setInterval> | null = null;
+  let inFlight = false;
+  let retryCount = 0;
+  const maxRetries = options?.maxRetries ?? 3;
 
   async function tick(unitsToAdd = 1): Promise<SignedUsageVoucher> {
     if (!active) {
       throw new Error("MeterLoop has already stopped");
     }
+    if (inFlight) {
+      return latestVoucher!;
+    }
+    inFlight = true;
 
-    const nextUnits = currentUnits + unitsToAdd;
-    const nextAmount = BigInt(nextUnits) * unitPriceStroops;
+    try {
+      const nextUnits = currentUnits + unitsToAdd;
+      const nextAmount = BigInt(nextUnits) * unitPriceStroops;
 
-    if (nextAmount > capStroops) {
-      const err = new Error(
-        `Meter cap exceeded: requested ${nextUnits} units (${nextAmount} stroops) exceeds cap (${capStroops} stroops)`,
-      );
-      if (options?.onError) {
-        options.onError(err);
+      if (nextAmount > capStroops) {
+        const err = new Error(
+          `Meter cap exceeded: requested ${nextUnits} units (${nextAmount} stroops) exceeds cap (${capStroops} stroops)`,
+        );
+        if (options?.onError) {
+          options.onError(err);
+        }
+        throw err;
       }
-      throw err;
+
+      currentUnits = nextUnits;
+      const voucher: UsageVoucher = {
+        pactId,
+        units: currentUnits,
+      };
+
+      const digest = usageMessage(voucher);
+      const signature = keypair.sign(Buffer.from(digest)).toString("base64");
+      const signed: SignedUsageVoucher = {
+        voucher,
+        signature,
+        digestHex: Buffer.from(digest).toString("hex"),
+      };
+
+      latestVoucher = signed;
+
+      if (options?.onVoucher) {
+        try {
+          await options.onVoucher(signed);
+          retryCount = 0;
+        } catch (voucherErr) {
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            stop();
+          }
+          throw voucherErr;
+        }
+      }
+
+      return signed;
+    } finally {
+      inFlight = false;
     }
-
-    currentUnits = nextUnits;
-    const voucher: UsageVoucher = {
-      pactId,
-      units: currentUnits,
-    };
-
-    const digest = usageMessage(voucher);
-    const signature = keypair.sign(Buffer.from(digest)).toString("base64");
-    const signed: SignedUsageVoucher = {
-      voucher,
-      signature,
-      digestHex: Buffer.from(digest).toString("hex"),
-    };
-
-    latestVoucher = signed;
-
-    if (options?.onVoucher) {
-      await options.onVoucher(signed);
-    }
-
-    return signed;
   }
 
   function stop(): void {
@@ -103,8 +124,8 @@ export function startMeterLoop(
 
   if (options?.intervalMs && options.intervalMs > 0) {
     timer = setInterval(() => {
+      if (inFlight) return;
       tick().catch((err: unknown) => {
-        stop();
         if (options.onError && err instanceof Error) {
           options.onError(err);
         }
