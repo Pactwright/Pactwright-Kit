@@ -267,49 +267,64 @@ describe("Pactwright Agent Runtime", () => {
       expect(state).toBe("allowed");
     });
 
-    it("returns 'settled' for M0 ALLOW and 'refunded' for M0 DENY", async () => {
-      const stateAllow = await pw.await(samplePact, { until: "terminal" });
-      expect(stateAllow).toBe("settled");
-
-      const denyVerifier = new VerifierWitness({
-        fetchImpl: vi.fn(async () =>
-          new Response(JSON.stringify({ verdict: "DENY", amount: "0", envelopeRef: "verdict-v1 sha256=" + "ab".repeat(32) }), { status: 200 }),
-        ),
+    it("polls until terminal state is observed", async () => {
+      let polls = 0;
+      const state = await pw.await(samplePact, {
+        until: "terminal",
+        pollIntervalMs: 5,
+        timeoutMs: 200,
+        pactReader: async () => {
+          polls++;
+          if (polls < 3) return "funded";
+          return "settled";
+        },
       });
-      const pwDeny = createPactwright({
-        network: mockNetwork,
-        wallet: buyerWallet,
-        verifierUrl: "https://verifier.test",
-        adapters: { discovery, reputation, gate, verifier: denyVerifier },
-      });
-
-      const stateDeny = await pwDeny.await(samplePact, { until: "terminal" });
-      expect(stateDeny).toBe("refunded");
+      expect(state).toBe("settled");
+      expect(polls).toBe(3);
     });
 
-    it("returns 'settled' for M2 ALLOW and 'released' for M2 DENY", async () => {
+    it("returns observed non-terminal state when timeoutMs expires before terminal state", async () => {
+      let polls = 0;
+      const state = await pw.await(samplePact, {
+        until: "terminal",
+        pollIntervalMs: 10,
+        timeoutMs: 50,
+        pactReader: async () => {
+          polls++;
+          return "funded";
+        },
+      });
+      expect(state).toBe("funded");
+      expect(polls).toBeGreaterThan(1);
+    });
+
+    it("returns observed state when verdict arrived but pact not yet terminal and timeout expires", async () => {
+      const state = await pw.await(samplePact, {
+        until: "terminal",
+        pollIntervalMs: 10,
+        timeoutMs: 50,
+        pactReader: async () => "allowed",
+      });
+      // Never invents "settled" from the ALLOW verdict — returns observed "allowed"
+      expect(state).toBe("allowed");
+    });
+
+    it("returns 'refunded' for M0 and 'released' for M2 when terminal release occurs", async () => {
+      const stateM0 = await pw.await(samplePact, {
+        until: "terminal",
+        pactReader: async () => "refunded",
+      });
+      expect(stateM0).toBe("refunded");
+
       const m2Pact: Pact = {
         ...samplePact,
         terms: { ...sampleTerms, mode: "escrow" },
       };
-
-      const stateAllow = await pw.await(m2Pact, { until: "terminal" });
-      expect(stateAllow).toBe("settled");
-
-      const denyVerifier = new VerifierWitness({
-        fetchImpl: vi.fn(async () =>
-          new Response(JSON.stringify({ verdict: "DENY", amount: "0", envelopeRef: "verdict-v1 sha256=" + "ab".repeat(32) }), { status: 200 }),
-        ),
+      const stateM2 = await pw.await(m2Pact, {
+        until: "terminal",
+        pactReader: async () => "released",
       });
-      const pwDeny = createPactwright({
-        network: mockNetwork,
-        wallet: buyerWallet,
-        verifierUrl: "https://verifier.test",
-        adapters: { discovery, reputation, gate, verifier: denyVerifier },
-      });
-
-      const stateDeny = await pwDeny.await(m2Pact, { until: "terminal" });
-      expect(stateDeny).toBe("released");
+      expect(stateM2).toBe("released");
     });
   });
 

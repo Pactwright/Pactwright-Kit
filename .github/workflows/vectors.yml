@@ -17,4 +17,9 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Verify vendored vectors match pinned commit (ROADMAP K-03, #124)
+        run: |
+          ref=$(tr -d '[:space:]' < packages/core/test/vectors/pactwright/COMMIT)
+          ./scripts/fetch-vectors.sh "$ref"
+          git diff --exit-code packages/core/test/vectors/pactwright/
       - run: pnpm test packages/core/test/vectors.test.ts

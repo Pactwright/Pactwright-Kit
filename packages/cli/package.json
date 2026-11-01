@@ -11,6 +11,7 @@
     }
   },
   "scripts": {
+    "pactwright": "node ./dist/index.js",
     "test": "vitest run --root ../.. --dir .",
     "build": "tsc -p tsconfig.build.json"
   },
