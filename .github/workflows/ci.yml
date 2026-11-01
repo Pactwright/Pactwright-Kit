@@ -32,8 +32,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm test
       - run: pnpm build
+      - run: pnpm test
 
   # The image Render deploys (render.yaml): build it on every PR so a missing file in the
   # Docker context fails here instead of in production.

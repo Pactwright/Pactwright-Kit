@@ -1,6 +1,5 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
 import { Keypair } from "@stellar/stellar-base";
 import { signEnvelope, type UnsignedEnvelope } from "@witness/core";
@@ -213,15 +212,6 @@ describe("Pactwright CLI Commands", () => {
 
   describe("CLI executable entrypoint (ROADMAP K-12, #125)", () => {
     const cliBin = path.resolve(__dirname, "../dist/index.js");
-
-    beforeAll(() => {
-      if (!fs.existsSync(cliBin)) {
-        execFileSync("pnpm", ["--filter", "@pactwright/cli", "run", "build"], {
-          cwd: path.resolve(__dirname, "../../.."),
-          stdio: "ignore",
-        });
-      }
-    });
 
     it("prints help message with --help", () => {
       const out = execFileSync(process.execPath, [cliBin, "--help"], { encoding: "utf8" });
