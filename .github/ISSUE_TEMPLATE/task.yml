@@ -31,7 +31,22 @@ body:
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: Checkable conditions for "done".
+      description: Checkable conditions for "done", one checkbox each. Every CI gate passing and the ROADMAP.md update are always required.
+      value: |
+        - [ ] 
+        - [ ] Every CI gate passes
+        - [ ] `ROADMAP.md` updated: task status, progress counts, one Update log line
+    validations:
+      required: true
+  - type: textarea
+    id: tech-stack
+    attributes:
+      label: Tech stack
+      description: Languages, versions and tools the change touches.
+      value: |
+        - Node 24, TypeScript (strict), pnpm, zod 4
+        - `@stellar/stellar-sdk`, `@x402/*`, Hono (verifier), Express middleware
+        - Tests: Vitest (`pnpm test`), `pnpm typecheck`, `pnpm lint`
     validations:
       required: true
   - type: textarea

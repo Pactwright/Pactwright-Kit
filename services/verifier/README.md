@@ -8,7 +8,7 @@ Witness-compatible verifier: delivery receipt → evidence hash → model reads 
 Hosted on Render at **https://pactwright-verifier-testnet.onrender.com** (service
 `pactwright-verifier-testnet`, defined in [`render.yaml`](../../render.yaml) next to the facilitator).
 A verdict it signed has been accepted on-chain by `record_verdict`: see
-[the hosted verifier](../../README.md#the-hosted-verifier) in the Kit README. Full setup guide:
+[the hosted verifier](../../docs/OVERVIEW.md#the-hosted-verifier) in the Kit overview. Full setup guide:
 [Run a verifier](https://pactwright.github.io/docs/guides/verifier/).
 
 To deploy your own:
