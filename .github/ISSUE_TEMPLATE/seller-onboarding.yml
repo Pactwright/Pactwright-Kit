@@ -1,0 +1,64 @@
+name: Seller onboarding request
+description: Put one of your API routes behind a pact on testnet and become a launch seller.
+title: "seller: <your route or product>"
+labels: ["seller onboarding"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for wanting to sell behind a pact. The steps are in the guide: https://pactwright.github.io/docs/guides/launch-sellers/
+        **Never paste a secret key, seed or API key here.** A maintainer sends your facilitator key privately.
+  - type: input
+    id: route
+    attributes:
+      label: Route
+      description: The HTTPS endpoint you want to protect, or where it will live.
+      placeholder: https://api.example.com/translate
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What it sells
+      description: What a buyer gets for one call, and the price you have in mind (USDC).
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - exact-refund (M0, paid up front, refund on a short result)
+        - escrow (M2, held in the contract until the verdict)
+        - Not sure yet
+    validations:
+      required: true
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Server framework
+      options:
+        - Express
+        - Hono
+        - Other (say which below)
+    validations:
+      required: true
+  - type: textarea
+    id: condition
+    attributes:
+      label: How a buyer would know the result is right
+      description: The verifier handles translations and code review today. Describe your case even if it's different.
+    validations:
+      required: true
+  - type: input
+    id: address
+    attributes:
+      label: Your testnet public key (G…)
+      description: Public key only. Leave empty if you haven't created it yet.
+  - type: input
+    id: contact
+    attributes:
+      label: How to send you the facilitator key
+      description: A private channel a maintainer can reach you on, for example an email address or a Discord handle.
+    validations:
+      required: true
