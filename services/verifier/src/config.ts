@@ -76,12 +76,12 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
   // VERIFIER_PUBLIC_URL wins; otherwise the host's own address: Vercel's production hostname
   // (VERCEL_PROJECT_PRODUCTION_URL, no scheme) or Render's RENDER_EXTERNAL_URL.
   const vercelHost = env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
-  const publicUrl = (
+  const publicUrl = withoutTrailingSlashes(
     env.VERIFIER_PUBLIC_URL?.trim() ||
-    (vercelHost ? `https://${vercelHost}` : "") ||
-    env.RENDER_EXTERNAL_URL?.trim() ||
-    ""
-  ).replace(/\/+$/, "");
+      (vercelHost ? `https://${vercelHost}` : "") ||
+      env.RENDER_EXTERNAL_URL?.trim() ||
+      "",
+  );
   if (!publicUrl) problems.push("VERIFIER_PUBLIC_URL is not set (the URL envelope references point at)");
   else url(publicUrl, "VERIFIER_PUBLIC_URL", problems);
   const databaseUrl = env.VERIFIER_DATABASE_URL?.trim() || env.DATABASE_URL?.trim() || undefined;
@@ -118,4 +118,11 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
     nonDeliveryTimeoutSec,
     port,
   };
+}
+
+/** Drops trailing slashes. A loop rather than `/\/+$/`, which backtracks polynomially on long runs of slashes. */
+export function withoutTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") end--;
+  return value.slice(0, end);
 }

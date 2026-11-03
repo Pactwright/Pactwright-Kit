@@ -13,6 +13,7 @@ import {
 } from "@witness/core";
 import type { EvidenceItem, VerdictEnvelope } from "./types.ts";
 import type { RuleDecision } from "./rules/types.ts";
+import { withoutTrailingSlashes } from "./config.ts";
 
 /** Invariant: Exactly one attestation per pact_id. */
 const issuedAttestations = new Set<string>();
@@ -73,7 +74,7 @@ export async function signVerdict(params: SignPipelineParams): Promise<SignPipel
   const envelopeSha256 = proofHash;
   // Point only at a server that will serve the envelope; otherwise say it isn't served (urn:).
   const envelopeUri = envelopeBaseUrl
-    ? `${envelopeBaseUrl.replace(/\/+$/, "")}/v1/envelopes/${envelopeSha256}`
+    ? `${withoutTrailingSlashes(envelopeBaseUrl)}/v1/envelopes/${envelopeSha256}`
     : `urn:pactwright:envelope:${envelopeSha256}`;
   const envelopeRef = `verdict-v1 sha256=${envelopeSha256} uri=${envelopeUri}`;
 
