@@ -20,7 +20,8 @@
   <a href="https://pactwright.github.io/docs/"><strong>Documentation</strong></a> ·
   <a href="#-quick-start"><strong>Quick start</strong></a> ·
   <a href="#-testnet-evidence"><strong>Evidence</strong></a> ·
-  <a href="https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/brag.mp4"><strong>Watch Film (1080p)</strong></a>
+  <a href="https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/brag.mp4"><strong>Watch Film (1080p)</strong></a> ·
+  <a href="https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/pactwright-product-flow.mp4"><strong>Product demo</strong></a>
 </p>
 
 <p align="center">
@@ -31,6 +32,8 @@
 
 > 🔊 **Turn sound on.** [Download or watch the full film (1080p, 60 fps, with music & sound)](https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/brag.mp4)  
 > *One agent, four purchases, four different endings on Stellar testnet: paid pro rata for 3 of 4 pages, refunded for a tortilla recipe, refunded when nobody answered, and half refunded after a dispute.*
+>
+> 🎬 **Product demo (80 s):** [a real purchase through the hosted services](https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/pactwright-product-flow.mp4). An escrow pact is opened on testnet, the Vercel-hosted verifier judges the delivered translation, `record_verdict` accepts its signature, the pact settles, and Studio shows the timeline. The terminal output is replayed from the run on 2026-11-03.
 
 > [!IMPORTANT]
 > **Testnet only, not published yet.** Every MVP scenario runs as real Stellar testnet transactions

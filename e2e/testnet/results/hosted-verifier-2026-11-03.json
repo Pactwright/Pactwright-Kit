@@ -1,0 +1,17 @@
+{
+  "date": "2026-11-03T17:49:16.830Z",
+  "verifier": "https://pactwright-verifier.vercel.app",
+  "verifierHex": "4efdaeb6c34ef1babbc844909afe576b288a36a2afe43a8bf6fcff82c9ffe4ff",
+  "pactId": "ae002d9304129bd4c35fbb63dee5a6b01deada9bdcca4dae54a935533e8b04ea",
+  "evidence": [
+    "https://raw.githubusercontent.com/Pactwright/pactwright-evidence/main/ae002d9304129bd4c35fbb63dee5a6b01deada9bdcca4dae54a935533e8b04ea/7816267d1862ed84ca6d7690af6840ab11b57ca6b827b054a662421f43d219c2",
+    "https://raw.githubusercontent.com/Pactwright/pactwright-evidence/main/ae002d9304129bd4c35fbb63dee5a6b01deada9bdcca4dae54a935533e8b04ea/1b8d53ea3e1b76ea430fa4255501918dc90b7e9c542aad8ee9c74e6662802812"
+  ],
+  "envelopeRef": "verdict-v1 sha256=6a01ac1b29a0c44ec9a0fb2b39e66f533a4b045eefbed90d34b69c61fd221e8a uri=https://pactwright-verifier.vercel.app/v1/envelopes/6a01ac1b29a0c44ec9a0fb2b39e66f533a4b045eefbed90d34b69c61fd221e8a",
+  "verdict": "ALLOW",
+  "amount": "1",
+  "issuedLedger": 5540898,
+  "openTx": "d23cc092c4e7f2b0e1076f37ba15c2d25989bf065ac8282d142fbddec0e6a2d0",
+  "recordVerdictTx": "34587060763111f53993d7359f5bccea72324482324c233114c77cbf5590e03b",
+  "settleTx": "b0ef08a6f3644eecb5b474d536324c06bca23d025da0edd60d5d0516994529d8"
+}
