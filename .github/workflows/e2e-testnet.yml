@@ -33,8 +33,8 @@ jobs:
       - name: Run every scenario on testnet
         env:
           E2E_VERIFIER_SECRET: ${{ secrets.TESTNET_VERIFIER_SECRET }}
-          # Hosted testnet facilitator with the `pact` scheme (render.yaml, ROADMAP L-08): runs the x402 rows.
-          E2E_FACILITATOR_URL: ${{ vars.E2E_FACILITATOR_URL || 'https://pactwright-facilitator-testnet.onrender.com' }}
+          # Hosted testnet facilitator with the `pact` scheme (deploy/facilitator, ROADMAP L-08): runs the x402 rows.
+          E2E_FACILITATOR_URL: ${{ vars.E2E_FACILITATOR_URL || 'https://pactwright-facilitator.vercel.app' }}
           E2E_FACILITATOR_API_KEY: ${{ secrets.E2E_FACILITATOR_API_KEY }}
         run: |
           test -n "$E2E_VERIFIER_SECRET" || { echo "TESTNET_VERIFIER_SECRET is not set"; exit 1; }

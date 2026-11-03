@@ -134,7 +134,7 @@ The two **x402** rows are the full purchase flow:
 
 1. The Kit agent requests a resource from the Kit's `pact()` seller middleware and gets a 402.
 2. The agent pays with its built-in x402 payment, signing only auth entries.
-3. Accensa's x402 facilitator, hosted on testnet at `https://pactwright-facilitator-testnet.onrender.com` with the [`pact` scheme](https://github.com/accensa/x402-facilitator-stellar/pull/651), verifies the payment, pays the fee and settles it.
+3. Accensa's x402 facilitator, hosted on testnet at `https://pactwright-facilitator.vercel.app` with the [`pact` scheme](https://github.com/accensa/x402-facilitator-stellar/pull/651), verifies the payment, pays the fee and settles it.
 4. The seller serves the content with a delivery receipt, which is then checked like the verifier checks it.
 
 For M2, the verdict and the seller's settle also go through the facilitator's `/pact/submit`.
@@ -169,7 +169,7 @@ full report, with buyer, seller and receipt leaves, is
 Run it yourself. The nightly workflow runs it too, x402 rows included, against the hosted facilitator:
 
 ```bash
-E2E_VERIFIER_SECRET=S… E2E_FACILITATOR_URL=https://pactwright-facilitator-testnet.onrender.com pnpm e2e:testnet
+E2E_VERIFIER_SECRET=S… E2E_FACILITATOR_URL=https://pactwright-facilitator.vercel.app pnpm e2e:testnet
 ```
 
 **Seller key in a KMS.** On the same date a `RefundVault` refund was signed through HashiCorp Vault
@@ -297,8 +297,8 @@ x402 route into a pact-protected route. Runnable examples:
 
 `POST /v1/verdicts` takes the pact `terms`, at least one `evidence` item, an optional seller
 `deliveryReceipt`, and a `milestone` (`delivery`, or `dispute-<n>` for later disputes). The service's
-own README is [`services/verifier/README.md`](services/verifier/README.md), including the container
-build and the Render deployment.
+own README is [`services/verifier/README.md`](services/verifier/README.md), including the Vercel
+deployment and the container build.
 
 ## 🤝 Community & Maintainers
 

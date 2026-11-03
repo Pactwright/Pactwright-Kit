@@ -36,8 +36,8 @@ jobs:
       - run: pnpm build
       - run: pnpm test
 
-  # The image Render deploys (render.yaml): build it on every PR so a missing file in the
-  # Docker context fails here instead of in production.
+  # The self-hosting image (services/verifier/Dockerfile): build it on every PR so a missing file
+  # in the Docker context fails here instead of for whoever deploys it.
   verifier-image:
     runs-on: ubuntu-latest
     steps:

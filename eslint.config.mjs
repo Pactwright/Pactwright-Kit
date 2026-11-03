@@ -7,6 +7,8 @@ export default tseslint.config(
     ignores: [
       "**/dist/**",
       "**/node_modules/**",
+      "**/.vercel/**", // Vercel build output
+      "deploy/facilitator/upstream/**", // Accensa's facilitator, fetched unmodified by build.mjs
       "vendor/**", // upstream code, kept unmodified (vendor/witness-core/UPSTREAM.md)
       "packages/contracts-client/src/**", // generated (K-05)
     ],
@@ -22,5 +24,10 @@ export default tseslint.config(
       ],
       "@typescript-eslint/consistent-type-imports": "error",
     },
+  },
+  {
+    // Node build and deploy scripts.
+    files: ["**/*.mjs"],
+    languageOptions: { globals: { process: "readonly", console: "readonly" } },
   },
 );
