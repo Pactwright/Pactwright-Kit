@@ -73,13 +73,12 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
   if (facilitatorUrl) url(facilitatorUrl, "FACILITATOR_URL", problems);
   if (evidenceBucketUrl) url(evidenceBucketUrl, "EVIDENCE_BUCKET_URL", problems);
   if (rpcUrl) url(rpcUrl, "STELLAR_RPC_URL", problems);
-  // VERIFIER_PUBLIC_URL wins; otherwise the host's own address: Vercel's production hostname
-  // (VERCEL_PROJECT_PRODUCTION_URL, no scheme) or Render's RENDER_EXTERNAL_URL.
+  // VERIFIER_PUBLIC_URL wins; otherwise Vercel's production hostname (VERCEL_PROJECT_PRODUCTION_URL,
+  // no scheme).
   const vercelHost = env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
   const publicUrl = withoutTrailingSlashes(
     env.VERIFIER_PUBLIC_URL?.trim() ||
       (vercelHost ? `https://${vercelHost}` : "") ||
-      env.RENDER_EXTERNAL_URL?.trim() ||
       "",
   );
   if (!publicUrl) problems.push("VERIFIER_PUBLIC_URL is not set (the URL envelope references point at)");
@@ -89,7 +88,7 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
     problems.push("DATABASE_URL is not set (production keeps envelopes in Postgres so they survive restarts)");
   }
   const nonDeliveryTimeoutSec = positiveInt(env.NON_DELIVERY_TIMEOUT_SEC, 300, "NON_DELIVERY_TIMEOUT_SEC", problems);
-  // Hosts such as Render inject PORT; VERIFIER_PORT wins when both are set.
+  // Container hosts inject PORT; VERIFIER_PORT wins when both are set.
   const portVar = env.VERIFIER_PORT?.trim() ? "VERIFIER_PORT" : "PORT";
   const port = positiveInt(env[portVar], 8787, portVar, problems);
 

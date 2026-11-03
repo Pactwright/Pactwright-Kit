@@ -238,10 +238,10 @@ describe("loadVerifierConfig", () => {
     expect(config.publicUrl).toBe("https://verifier.example");
     expect(config.databaseUrl).toBeUndefined();
   });
-  it("takes its public URL from Render unless VERIFIER_PUBLIC_URL is set", () => {
+  it("takes its public URL from Vercel unless VERIFIER_PUBLIC_URL is set", () => {
     const { VERIFIER_PUBLIC_URL: _, ...rest } = env;
-    expect(loadVerifierConfig({ ...rest, RENDER_EXTERNAL_URL: "https://v.onrender.com" }).publicUrl).toBe("https://v.onrender.com");
-    expect(loadVerifierConfig({ ...env, RENDER_EXTERNAL_URL: "https://v.onrender.com" }).publicUrl).toBe("https://verifier.example");
+    expect(loadVerifierConfig({ ...rest, VERCEL_PROJECT_PRODUCTION_URL: "v.vercel.app" }).publicUrl).toBe("https://v.vercel.app");
+    expect(loadVerifierConfig({ ...env, VERCEL_PROJECT_PRODUCTION_URL: "v.vercel.app" }).publicUrl).toBe("https://verifier.example");
     expect(() => loadVerifierConfig(rest)).toThrow(/VERIFIER_PUBLIC_URL is not set/);
   });
   it("needs a database in production so envelopes survive restarts", () => {
