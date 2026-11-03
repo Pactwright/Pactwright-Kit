@@ -8,8 +8,8 @@
 
 | | |
 |---|---|
-| Last updated | 2026-11-01 |
-| Progress | **52 / 58 tasks (90%)** |
+| Last updated | 2026-11-03 |
+| Progress | **52 / 59 tasks (88%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -19,7 +19,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 |---|---|---|---|
 | Foundations (this repo) | 7 | 7 | 100% |
 | Phase 3 — Kit | 18 | 15 | 83% |
-| Phase 4 — Verifier | 12 | 12 | 100% |
+| Phase 4 — Verifier | 13 | 12 | 92% |
 | Phase 7 — v1 | 12 | 10 | 83% |
 | Phase 8 — v1.1 | 2 | 1 | 50% |
 | Phase 9 — v2 | 7 | 7 | 100% |
@@ -75,6 +75,7 @@ Trustworthy, reproducible verdicts for one condition kind.
 - [x] **V-10** Dockerfile; deploy the testnet verifier — core · M · V-06 (#94, 2026-10-29)
 - [x] **V-12** Real-model accuracy: run the labelled eval set through the configured model (not hand-written readings) and gate on ≥ 90% (#80) — core · H · V-10 · PRD §8 (#92, 2026-10-29)
 - [x] **V-11** Measure verification latency; set default deadline lengths; answer Q6 — core · M · V-10 · Q6 (#72, 2026-10-29)
+- [ ] **V-13** The envelope hash commits to the signed envelope, not the proof hash; unique store key; test vector (ADR-018) — core · M · V-05
 
 ## Phase 7 — v1
 
@@ -116,6 +117,7 @@ Mainnet operation of the pieces this repo runs: the verifier and the end-to-end 
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-11-03 | ADR-018 | V-13 added `[ ]` | The envelope hash was Witness's `proofHash` (condition and evidence only), so pacts judged on the same documents shared a hash. The on-chain `envelope_hash` didn't commit to the verdict, and `/v1/envelopes/<h>` could return another pact's envelope. ADR-018 (Proposed) makes it `sha256(canonicalize(signed envelope))` with a unique store key. The fix is in `sign.ts` (core-team path). |
 | 2026-11-03 | vercel hosting | V-10, L-08 | Testnet hosting moved from Render to Vercel. The verifier runs as a Vercel Function: `src/vercel.ts` builds the same app once per instance (`buildVerifierApp`, shared with `startServer`) and `build:vercel` bundles it into `.vercel/output`; an incomplete configuration answers 503 with the missing setting names, and the public URL falls back to `VERCEL_PROJECT_PRODUCTION_URL`. Accensa's facilitator runs unmodified at a pinned commit through `deploy/facilitator` (a serverless counterpart of its `server.js`). Same verifier key (`4efdaeb6…e4ff`) and fee-paying signer (`GAVTUPPE…F2LU`); `/supported` unchanged. Links now point at `pactwright-{verifier,facilitator,studio}.vercel.app`. Checked end to end on 2026-11-03: `pnpm e2e:hosted-verifier` against the Vercel verifier opened pact `ae002d93…`, got ALLOW 1 USDC, then `record_verdict` (`34587060…`) and settle (`b0ef08a6…`) succeeded; results in `e2e/testnet/results/hosted-verifier-2026-11-03.json`. The README links an 80 s product demo of that run. Trailing slashes on the public URL are trimmed with a loop instead of `/\/+$/` (CodeQL `js/polynomial-redos`), here and in `sign.ts`. |
 | 2026-11-02 | wave readiness | — | README trimmed from 612 to 348 lines; the moved sections are kept unchanged in `docs/OVERVIEW.md` (the verifier README now links there). Maintainer table names the lead maintainer and contacts; the approving-review sentence matches the current protection. The issue form asks for checkbox acceptance criteria and a tech stack. Closed #78 (facilitator hosted; nightly x402 rows pass) and #79 (hosted verdict accepted by `record_verdict`, `0225f78b…`, #94). |
 | 2026-11-01 | #136 | — | Embedded the Pactwright product launch film and animated preview on the repository README, linked to the 1080p release asset. |
