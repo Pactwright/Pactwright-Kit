@@ -506,7 +506,7 @@ async function x402Scenarios(buyer: Keypair, seller: Keypair, facilitatorUrl: st
       passphrase: PASSPHRASE,
       rpcUrl: RPC_URL,
       usdcSac: USDC_SAC_ID,
-      receiptAnchor: "CAEO5GBC3ULRC5RYBSCSOXLNXHU2HZAHNW5HY5LZM3DIPFMX357ILNJ2",
+      receiptAnchor: "CCLPJIYCSZXAK5HQNVOBO634YGATAL7ASE6HZRFQLKB3TJHMK7NCEDXZ",
       facilitatorUrl,
     },
     wallet: new WalletKeypair(buyer),
