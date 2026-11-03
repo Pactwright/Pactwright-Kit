@@ -277,3 +277,13 @@ describe("currentLedger", () => {
     await expect(currentLedger("https://rpc.example", rpc(503, {}))).rejects.toThrow(/latest ledger/);
   });
 });
+
+describe("withoutTrailingSlashes", () => {
+  it("drops every trailing slash and nothing else", async () => {
+    const { withoutTrailingSlashes } = await import("../src/config.ts");
+    expect(withoutTrailingSlashes("https://v.example///")).toBe("https://v.example");
+    expect(withoutTrailingSlashes("https://v.example/a/")).toBe("https://v.example/a");
+    expect(withoutTrailingSlashes("")).toBe("");
+    expect(withoutTrailingSlashes("/".repeat(100_000))).toBe("");
+  });
+});

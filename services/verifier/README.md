@@ -5,31 +5,37 @@ Witness-compatible verifier: delivery receipt → evidence hash → model reads 
 
 ## Testnet deployment (ROADMAP V-10)
 
-Hosted on Render at **https://pactwright-verifier-testnet.onrender.com** (service
-`pactwright-verifier-testnet`, defined in [`render.yaml`](../../render.yaml) next to the facilitator).
+Hosted on Vercel at **https://pactwright-verifier.vercel.app** (project `pactwright-verifier`), as one
+Vercel Function built by `pnpm --filter @pactwright/verifier build:vercel`.
 A verdict it signed has been accepted on-chain by `record_verdict`: see
 [the hosted verifier](../../docs/OVERVIEW.md#the-hosted-verifier) in the Kit overview. Full setup guide:
 [Run a verifier](https://pactwright.github.io/docs/guides/verifier/).
 
-To deploy your own:
+To deploy your own on Vercel:
 
-1. Render Dashboard → **New → Blueprint** → this repo. Render reads `render.yaml`.
-2. Fill in the `sync: false` values when asked. They stay in Render's secret store:
+1. From this directory: `vercel link`, then `pnpm run build:vercel` and
+   `vercel deploy --prebuilt --prod`. The build bundles `src/vercel.ts` and the workspace packages
+   it uses into `.vercel/output` (Build Output API v3, Node 22, 120 s per request).
+2. Set these as Production environment variables (`vercel env add <NAME> production`):
    - `VERIFIER_SECRET_KEY`: the key the `pact` contract is configured with (`4efdaeb6…e4ff` on testnet).
    - `VERIFIER_PROVIDER`, `VERIFIER_MODEL`, `VERIFIER_EFFORT`: the pinned provider, model and
      effort. There is no default model.
    - `VERIFIER_LLM_API_KEY`, and `LLM_BASE_URL` if the provider isn't the adapter's default.
      The adapter speaks the OpenAI-compatible `chat/completions` API.
-   - `FACILITATOR_URL`: the facilitator service's public URL.
+   - `FACILITATOR_URL`: the facilitator's public URL.
    - `EVIDENCE_BUCKET_URL`: an https prefix the verifier can read. Evidence URIs must resolve
      under it; anything else is refused before any fetch. On testnet this is the public
      [`pactwright-evidence`](https://github.com/Pactwright/pactwright-evidence) repository.
-   - `DATABASE_URL`: Postgres for verdict envelopes. The image runs with `NODE_ENV=production`,
-     which refuses to start without it.
-   `STELLAR_RPC_URL` is set in `render.yaml`; each escrow attestation is stamped with its latest
-   ledger. Envelope links point at `RENDER_EXTERNAL_URL` (set by Render) unless
-   `VERIFIER_PUBLIC_URL` is set.
+   - `DATABASE_URL`: Postgres for verdict envelopes. Production refuses to start without it.
+   - `STELLAR_RPC_URL`: each escrow attestation is stamped with its latest ledger.
+
+   Envelope links point at the project's production domain (`VERCEL_PROJECT_PRODUCTION_URL`)
+   unless `VERIFIER_PUBLIC_URL` is set. Until the configuration is complete, every request
+   answers `503` with the names of the missing settings.
 3. Check that `GET <url>/health` returns the expected `verifierHex` and `"store":"postgres"`.
+
+The [`Dockerfile`](Dockerfile) runs the same app as a long-lived server for any container host;
+it reads the same variables, plus `VERIFIER_PORT` or the host's `PORT`.
 
 The process refuses to start, listing every problem, if the model, its API key, the verifier key,
 the evidence bucket, the RPC or (in production) the database is missing: it never invents a reading.

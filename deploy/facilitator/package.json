@@ -1,0 +1,12 @@
+{
+  "name": "pactwright-facilitator-vercel",
+  "private": true,
+  "description": "Builds Accensa's x402 facilitator as a Vercel Function for the Pactwright testnet.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

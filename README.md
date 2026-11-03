@@ -20,7 +20,8 @@
   <a href="https://pactwright.github.io/docs/"><strong>Documentation</strong></a> ·
   <a href="#-quick-start"><strong>Quick start</strong></a> ·
   <a href="#-testnet-evidence"><strong>Evidence</strong></a> ·
-  <a href="https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/brag.mp4"><strong>Watch Film (1080p)</strong></a>
+  <a href="https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/brag.mp4"><strong>Watch Film (1080p)</strong></a> ·
+  <a href="https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/pactwright-product-flow.mp4"><strong>Product demo</strong></a>
 </p>
 
 <p align="center">
@@ -31,6 +32,8 @@
 
 > 🔊 **Turn sound on.** [Download or watch the full film (1080p, 60 fps, with music & sound)](https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/brag.mp4)  
 > *One agent, four purchases, four different endings on Stellar testnet: paid pro rata for 3 of 4 pages, refunded for a tortilla recipe, refunded when nobody answered, and half refunded after a dispute.*
+>
+> 🎬 **Product demo (80 s):** [a real purchase through the hosted services](https://github.com/Pactwright/Pactwright-studio/releases/download/v0.1.0-rc.1/pactwright-product-flow.mp4). An escrow pact is opened on testnet, the Vercel-hosted verifier judges the delivered translation, `record_verdict` accepts its signature, the pact settles, and Studio shows the timeline. The terminal output is replayed from the run on 2026-11-03.
 
 > [!IMPORTANT]
 > **Testnet only, not published yet.** Every MVP scenario runs as real Stellar testnet transactions
@@ -134,7 +137,7 @@ The two **x402** rows are the full purchase flow:
 
 1. The Kit agent requests a resource from the Kit's `pact()` seller middleware and gets a 402.
 2. The agent pays with its built-in x402 payment, signing only auth entries.
-3. Accensa's x402 facilitator, hosted on testnet at `https://pactwright-facilitator-testnet.onrender.com` with the [`pact` scheme](https://github.com/accensa/x402-facilitator-stellar/pull/651), verifies the payment, pays the fee and settles it.
+3. Accensa's x402 facilitator, hosted on testnet at `https://pactwright-facilitator.vercel.app` with the [`pact` scheme](https://github.com/accensa/x402-facilitator-stellar/pull/651), verifies the payment, pays the fee and settles it.
 4. The seller serves the content with a delivery receipt, which is then checked like the verifier checks it.
 
 For M2, the verdict and the seller's settle also go through the facilitator's `/pact/submit`.
@@ -169,7 +172,7 @@ full report, with buyer, seller and receipt leaves, is
 Run it yourself. The nightly workflow runs it too, x402 rows included, against the hosted facilitator:
 
 ```bash
-E2E_VERIFIER_SECRET=S… E2E_FACILITATOR_URL=https://pactwright-facilitator-testnet.onrender.com pnpm e2e:testnet
+E2E_VERIFIER_SECRET=S… E2E_FACILITATOR_URL=https://pactwright-facilitator.vercel.app pnpm e2e:testnet
 ```
 
 **Seller key in a KMS.** On the same date a `RefundVault` refund was signed through HashiCorp Vault
@@ -297,8 +300,8 @@ x402 route into a pact-protected route. Runnable examples:
 
 `POST /v1/verdicts` takes the pact `terms`, at least one `evidence` item, an optional seller
 `deliveryReceipt`, and a `milestone` (`delivery`, or `dispute-<n>` for later disputes). The service's
-own README is [`services/verifier/README.md`](services/verifier/README.md), including the container
-build and the Render deployment.
+own README is [`services/verifier/README.md`](services/verifier/README.md), including the Vercel
+deployment and the container build.
 
 ## 🤝 Community & Maintainers
 

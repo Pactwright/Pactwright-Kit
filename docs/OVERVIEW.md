@@ -39,7 +39,7 @@ On 2026-10-29 the hosted verifier judged a real purchase with its real model (Go
 `gemini-3.5-flash-lite`), and the contract accepted its signature. The script opened an escrow pact
 with fresh accounts, committed the source and the delivered Portuguese translation to the public
 [evidence store](https://github.com/Pactwright/pactwright-evidence), asked
-`pactwright-verifier-testnet.onrender.com` for a verdict, then recorded it and settled. The script
+`pactwright-verifier.vercel.app` for a verdict, then recorded it and settled. The script
 never holds the verifier key, so the contract accepting the attestation shows the hosted service
 signed it.
 
@@ -50,25 +50,24 @@ signed it.
 | `record_verdict` | 5453761 | [`0225f78b…`](https://stellar.expert/explorer/testnet/tx/0225f78b5c3e9b321e1fd5311bc54a61ca9904fa82dbd2b4aeb9f379bc8650db) |
 | `settle` (1 USDC to the seller) | 5453762 | [`1f4ab38c…`](https://stellar.expert/explorer/testnet/tx/1f4ab38c3881892633c2dcf8d7c99c22bc49831d09512eb1b700e62e23e44924) |
 
-The pact in Studio: [`40725564…5c55`](https://pactwright-studio-testnet.onrender.com/pact/4072556402d709463f7cb888a4a9e03b061d906f0b7ca5c49ebb2eec4e7d5c55).
+The pact in Studio: [`40725564…5c55`](https://pactwright-studio.vercel.app/pact/4072556402d709463f7cb888a4a9e03b061d906f0b7ca5c49ebb2eec4e7d5c55).
 Report: [`e2e/testnet/results/hosted-verifier-2026-10-29.json`](../e2e/testnet/results/hosted-verifier-2026-10-29.json).
 Run it yourself (it needs write access to the evidence store) with
 `GITHUB_TOKEN=… pnpm e2e:hosted-verifier --reporter=verbose`.
 
-**Hosted testnet services.** All three are free-tier Render services, checked live on 2026-10-30.
+**Hosted testnet services.** All three run on Vercel (moved from Render on 2026-11-03), checked live on 2026-11-03.
 
 | Service | URL | What was measured |
 |---|---|---|
-| Facilitator | [`/supported`](https://pactwright-facilitator-testnet.onrender.com/supported) | Returns `exact` and `pact` on `stellar:testnet` with fees sponsored and `pactContract` = `CDUXJJUNYF…FEV6` |
-| Verifier | [`/health`](https://pactwright-verifier-testnet.onrender.com/health) | `ok`, `verifier` `GBHP3LVW…P7TDT`, `verifierHex` `4efdaeb6…e4ff` — the key sellers put in their terms |
-| Studio | [`pactwright-studio-testnet.onrender.com`](https://pactwright-studio-testnet.onrender.com/) | Indexes the testnet pacts; separate repository |
+| Facilitator | [`/supported`](https://pactwright-facilitator.vercel.app/supported) | Returns `exact` and `pact` on `stellar:testnet` with fees sponsored and `pactContract` = `CDUXJJUNYF…FEV6` |
+| Verifier | [`/health`](https://pactwright-verifier.vercel.app/health) | `ok`, `verifier` `GBHP3LVW…P7TDT`, `verifierHex` `4efdaeb6…e4ff` — the key sellers put in their terms |
+| Studio | [`pactwright-studio.vercel.app`](https://pactwright-studio.vercel.app/) | Indexes the testnet pacts; separate repository |
 
 > [!NOTE]
-> Free tier: a cold start was measured at **42 s** on the facilitator and **23 s** on the verifier on
-> 2026-10-30. The first call after the service sleeps is slow, not failing.
-> Deploys to testnet are manual (`autoDeploy: false` in `render.yaml` per Kit#127):
-> - Facilitator: `render deploys create srv-dbhk2i0n74is73e8cio0 --confirm`
-> - Verifier: `render deploys create srv-dbhk2i0n74is73e8cimg --confirm`
+> Vercel Functions don't sleep the way Render's free tier did (cold starts of 42 s and 23 s there).
+> Deploys to testnet are manual, as prebuilt Vercel deployments:
+> - Facilitator: `cd deploy/facilitator && npm ci && npm run build && vercel deploy --prebuilt --prod`
+> - Verifier: `cd services/verifier && pnpm run build:vercel && vercel deploy --prebuilt --prod`
 
 
 ## Architecture (continued)
@@ -137,7 +136,7 @@ kind.
 | `services/verifier` receipt checks | Working | Verifies the seller's ed25519 signature over the pact and body hash, and that the body is in the evidence |
 | `services/verifier` model reading | Real model | Provider-neutral adapter (OpenAI-compatible API), with timeouts and bounded retries. Fails closed: with no provider, model and key configured, it refuses rather than inventing a reading. **Real-model accuracy: 29/29 (100%)** on the labelled `document.translation` set with Google `gemini-3.5-flash-lite`, 2026-10-29 ([run](https://github.com/Pactwright/Pactwright-Kit/actions/runs/40897633766)) |
 | `services/verifier` HTTP service | Working | `/health`, `/v1/verdicts`, `/v1/envelopes/:sha256`; one verdict per pact and milestone. Envelopes are kept in Postgres, so their links, which point at the service itself, keep resolving after a restart |
-| Hosted verifier | Testnet | [`pactwright-verifier-testnet.onrender.com`](https://pactwright-verifier-testnet.onrender.com/health). A verdict it signed with the real model was accepted by `record_verdict` and settled ([evidence](#the-hosted-verifier)) |
+| Hosted verifier | Testnet | [`pactwright-verifier.vercel.app`](https://pactwright-verifier.vercel.app/health). A verdict it signed with the real model was accepted by `record_verdict` and settled ([evidence](#the-hosted-verifier)) |
 | `@pactwright/seller` refund and settle hooks | Working | `RefundVault.refund` (M0, disputes) and `settle` (M2) sent as real transactions. A refund has been signed by a HashiCorp Vault transit key, so the seller key never leaves the KMS (`pnpm e2e:kms`) |
 | `@pactwright/seller` middleware | Testnet | x402 v2 paywall: a valid 402, payments verified and settled by the facilitator before anything is served, `pact_id` derived from the verified payer, signed `X-Pactwright-Delivery`, one serve per pact (Express and Hono). No default payee, delivery key or verifier |
 | `@pactwright/agent` accounts | Tested offline | Sponsored agent accounts and top-ups, submitted through RPC; never returns the hash of an unsent transaction |

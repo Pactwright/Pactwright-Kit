@@ -8,7 +8,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run --root ../.. --dir ."
+    "test": "vitest run --root ../.. --dir .",
+    "build:vercel": "node scripts/build-vercel.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
@@ -21,6 +22,7 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
-    "@types/pg": "^8.23.1"
+    "@types/pg": "^8.23.1",
+    "esbuild": "0.28.2"
   }
 }
