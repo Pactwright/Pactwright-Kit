@@ -3,3 +3,7 @@ dist/
 .env
 .DS_Store
 coverage/
+
+# Vercel CLI link and Build Output
+.vercel
+.env*.local

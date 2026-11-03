@@ -113,11 +113,20 @@ async function verdict(c: Context, deps: AppDeps): Promise<Response> {
 }
 
 /**
- * Starts the verifier with the real pipeline: the configured model, evidence fetched from the
+ * Starts the verifier as a long-running server (Docker, local). Hosts that run it as a function
+ * (Vercel) use `buildVerifierApp` directly; see `vercel.ts`.
+ */
+export async function startServer(config: VerifierConfig): Promise<ReturnType<typeof serve>> {
+  const app = await buildVerifierApp(config);
+  return serve({ fetch: app.fetch, port: config.port });
+}
+
+/**
+ * Builds the verifier with the real pipeline: the configured model, evidence fetched from the
  * evidence bucket, and envelopes in Postgres (memory only when no database is configured).
  * Throws if the bucket can't be read over http(s) or the database can't be reached.
  */
-export async function startServer(config: VerifierConfig): Promise<ReturnType<typeof serve>> {
+export async function buildVerifierApp(config: VerifierConfig): Promise<Hono> {
   const modelAdapter = new ProviderNeutralLLMAdapter({
     provider: config.provider,
     modelId: config.model,
@@ -127,7 +136,7 @@ export async function startServer(config: VerifierConfig): Promise<ReturnType<ty
   });
   const evidenceLoader = createEvidenceLoader(config.evidenceBucketUrl);
   const store = config.databaseUrl ? await PostgresVerdictStore.connect(config.databaseUrl) : new MemoryVerdictStore();
-  const app = createApp({
+  return createApp({
     verifierKey: config.verifierKey,
     store,
     storeKind: config.databaseUrl ? "postgres" : "memory",
@@ -142,7 +151,6 @@ export async function startServer(config: VerifierConfig): Promise<ReturnType<ty
         envelopeBaseUrl: config.publicUrl,
       }),
   });
-  return serve({ fetch: app.fetch, port: config.port });
 }
 
 /** The network's latest ledger, stamped into attestations as `issued_ledger`. */

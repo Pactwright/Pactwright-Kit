@@ -73,8 +73,15 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
   if (facilitatorUrl) url(facilitatorUrl, "FACILITATOR_URL", problems);
   if (evidenceBucketUrl) url(evidenceBucketUrl, "EVIDENCE_BUCKET_URL", problems);
   if (rpcUrl) url(rpcUrl, "STELLAR_RPC_URL", problems);
-  // Render injects RENDER_EXTERNAL_URL; VERIFIER_PUBLIC_URL wins when both are set.
-  const publicUrl = (env.VERIFIER_PUBLIC_URL?.trim() || env.RENDER_EXTERNAL_URL?.trim() || "").replace(/\/+$/, "");
+  // VERIFIER_PUBLIC_URL wins; otherwise the host's own address: Vercel's production hostname
+  // (VERCEL_PROJECT_PRODUCTION_URL, no scheme) or Render's RENDER_EXTERNAL_URL.
+  const vercelHost = env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  const publicUrl = (
+    env.VERIFIER_PUBLIC_URL?.trim() ||
+    (vercelHost ? `https://${vercelHost}` : "") ||
+    env.RENDER_EXTERNAL_URL?.trim() ||
+    ""
+  ).replace(/\/+$/, "");
   if (!publicUrl) problems.push("VERIFIER_PUBLIC_URL is not set (the URL envelope references point at)");
   else url(publicUrl, "VERIFIER_PUBLIC_URL", problems);
   const databaseUrl = env.VERIFIER_DATABASE_URL?.trim() || env.DATABASE_URL?.trim() || undefined;
