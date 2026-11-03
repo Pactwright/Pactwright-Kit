@@ -24,6 +24,8 @@ verdict, the reasons, the amount, the timestamp and the signature. Found during 
 - `GET /v1/envelopes/<h>` is ambiguous. The Postgres store from #95 indexes `sha256` without a
   unique constraint and returns whichever row matches first, which can be another pact's envelope.
 
+The specification already says otherwise. The hash table in ARCHITECTURE.md (§ Hashes) defines `envelope_hash` as "sha256 of the canonical verdict-v1 envelope". The code deviates from it, so this ADR brings the implementation back to the spec rather than changing it.
+
 The contract is not affected. It stores and hashes whatever 32 bytes the attestation carries.
 
 ## Decision
