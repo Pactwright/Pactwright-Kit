@@ -14,3 +14,7 @@ updates:
     directory: "/services/verifier"
     schedule:
       interval: weekly
+    # Stay on the Node LTS line: Node 25 drops corepack, which the image build uses (#100).
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
