@@ -23,7 +23,7 @@
     "dist"
   ],
   "dependencies": {
-    "@stellar/stellar-sdk": "^16.4.1",
+    "@stellar/stellar-sdk": "^17.4.0",
     "buffer": "6.0.3"
   }
 }
