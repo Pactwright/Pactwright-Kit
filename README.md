@@ -290,6 +290,13 @@ x402 route into a pact-protected route. Runnable examples:
 `get_certificate`; `@pactwright/cli` exposes `pactwright verify`, `pact`, `agent-create`,
 `agent-topup`.
 
+Every MCP tool states the four behaviour hints a host warns users from — `readOnlyHint`,
+`destructiveHint`, `idempotentHint`, `openWorldHint` — and they are required on `ToolDefinition`, so a
+fifth tool cannot be added without saying what it does. `pactwright_get_pact` and `pactwright_dispute`
+are not wired to a pact read or a dispute submission and refuse instead of answering
+([`packages/mcp/src/tools/get-pact.ts`](packages/mcp/src/tools/get-pact.ts),
+[`dispute.ts`](packages/mcp/src/tools/dispute.ts)).
+
 **Verifier HTTP API.**
 
 | Method | Path | Returns |

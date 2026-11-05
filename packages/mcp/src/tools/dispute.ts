@@ -10,6 +10,10 @@ export const disputeTool: ToolDefinition<typeof input> = {
   name: "pactwright_dispute",
   description:
     "Request re-verification within the refund window. Not yet wired: the verifier accepts a `dispute-<n>` milestone, the Kit verdict adapter does not send one.",
+  // Not `readOnlyHint: true` even though the handler only throws: a host that auto-invokes this today
+  // gets an error, and once the milestone path is wired it will file an attestation on a pact. The
+  // hint is the warning that should already be in place when that lands.
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   input,
   inputSchema: {
     type: "object",

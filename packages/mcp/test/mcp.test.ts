@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { Pactwright } from "@pactwright/agent";
-import { createServer } from "../src/index.ts";
+import { createServer, tools } from "../src/index.ts";
 
 describe("Pactwright MCP Server", () => {
   const mockAgent: Pactwright = {
@@ -82,6 +82,50 @@ describe("Pactwright MCP Server", () => {
     expect(names).toContain("pactwright_get_pact");
     expect(names).toContain("pactwright_dispute");
     expect(names).toContain("pactwright_get_certificate");
+  });
+
+  // Hosts warn users from these four hints before invoking, and the OpenAI and Anthropic directories
+  // reject tools where any of them is missing, so they are asserted on the wire — the payload a host
+  // actually reads — not only on the source object.
+  const expectedHints = {
+    pactwright_find_sellers: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    pactwright_buy: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+    pactwright_get_pact: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    pactwright_dispute: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    pactwright_get_certificate: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  };
+
+  it("publishes all four behaviour hints for every tool", async () => {
+    const { client } = await createConnectedClient(mockAgent);
+    const result = await client.listTools();
+
+    const wire = Object.fromEntries(
+      result.tools.map((t) => [
+        t.name,
+        {
+          readOnlyHint: t.annotations?.readOnlyHint,
+          destructiveHint: t.annotations?.destructiveHint,
+          idempotentHint: t.annotations?.idempotentHint,
+          openWorldHint: t.annotations?.openWorldHint,
+        },
+      ]),
+    );
+    expect(wire).toEqual(expectedHints);
+  });
+
+  it("each tool states exactly four boolean hints, and none claims to be read-only and destructive", () => {
+    for (const tool of tools) {
+      expect(Object.keys(tool.annotations).sort()).toEqual([
+        "destructiveHint",
+        "idempotentHint",
+        "openWorldHint",
+        "readOnlyHint",
+      ]);
+      for (const value of Object.values(tool.annotations)) {
+        expect(typeof value).toBe("boolean");
+      }
+      expect(tool.annotations.readOnlyHint && tool.annotations.destructiveHint).toBe(false);
+    }
   });
 
   it("calls pactwright_find_sellers tool", async () => {

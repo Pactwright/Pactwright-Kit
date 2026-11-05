@@ -8,8 +8,8 @@
 
 | | |
 |---|---|
-| Last updated | 2026-11-03 |
-| Progress | **52 / 59 tasks (88%)** |
+| Last updated | 2026-11-05 |
+| Progress | **53 / 60 tasks (88%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -18,7 +18,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 | Section | Tasks | Done | % |
 |---|---|---|---|
 | Foundations (this repo) | 7 | 7 | 100% |
-| Phase 3 — Kit | 18 | 15 | 83% |
+| Phase 3 — Kit | 19 | 16 | 84% |
 | Phase 4 — Verifier | 13 | 12 | 92% |
 | Phase 7 — v1 | 12 | 10 | 83% |
 | Phase 8 — v1.1 | 2 | 1 | 50% |
@@ -57,6 +57,7 @@ SDK, MCP and CLI for M0 and M2.
 - [x] **K-15** Examples: `seller-express`, `agent-node` — wave · M · K-09 (#72, 2026-10-29)
 - [x] **K-16** `e2e-testnet.yml` nightly covering every MVP scenario in ARCH §13 — wave · H · K-09, V-10, S-04 (#76, 2026-10-29)
 - [x] **K-18** Drop `shardId` from `CertificateSchema` and the ARCHITECTURE copy (#86 + #89, 2026-10-29) — wave · T · S-04
+- [x] **K-19** State the four MCP behaviour hints on every tool, from what the handler actually does — wave · T · K-11 · FR-I2 · Done when: `ToolDefinition` requires all four so a tool cannot compile without them, and `mcp.test.ts` asserts each value on the `tools/list` wire (`feat/mcp-tool-annotations`, 2026-11-05)
 - [ ] **K-17** Publish `@pactwright/*` 0.1.0 to npm — core · T · K-16 — reopened: `@pactwright/*` is not on npm (E404); needs the npm scope (F-01) and a token
 
 ## Phase 4 — Verifier
@@ -117,6 +118,7 @@ Mainnet operation of the pieces this repo runs: the verifier and the end-to-end 
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-11-05 | `feat/mcp-tool-annotations` | K-19 added `[x]` | All five MCP tools now state the four behaviour hints, and `ToolDefinition` requires them, so a sixth tool cannot compile without saying what it does. Found by an external crawl that flagged the gap — the OpenAI and Anthropic directories reject a tool where any of `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint` is missing, and a host warns users from exactly these. Values come from the handlers, not the intentions: `find_sellers` and `get_certificate` are read-only network reads; `buy` is `readOnlyHint: false, destructiveHint: true` because it moves USDC and opens a pact, and `idempotentHint: false` because the same key cannot double-buy (`agent.buy` throws on the seller's 409) but a retry does not return the first result either, which is not the equivalence the hint promises; `get_pact` and `dispute` are `openWorldHint: false` because both refuse before any request leaves the process, and `dispute` stays `readOnlyHint: false` so the warning is already in place when the milestone path is wired. `server.ts` publishes them on `tools/list`. Two tests: one asserts the four values on the wire for every tool, one asserts each tool states exactly four booleans and never claims to be both read-only and destructive. Measured: `tsc -p tsconfig.json` exit 0, `eslint packages/mcp` exit 0, `vitest run` **45 files, 439 passed \| 3 skipped**. Mutation-checked — flipping `buy`'s `openWorldHint` fails the wire test, deleting `get-certificate`'s block fails two tests and `tsc` (TS2741). Counts 52/59 (88%) → 53/60 (88%), Phase 3 15/18 → 16/19. |
 | 2026-11-04 | dependabot | — | Dependabot no longer proposes Node major versions for the verifier image. #100 (Node 25) failed `verifier-image` because Node 25 drops `corepack`, which the build runs first. The image stays on Node 24 LTS; digest and minor updates continue. |
 | 2026-11-03 | anchorer rotation | — | The testnet `ReceiptAnchor` moved to `CCLPJIYC…EDXZ` (new admin `GBWCL7DD…5Y5F`) after the old anchorer key `GAKQTGNQ…M4KZ` was exposed (contracts#111). Studio re-anchored all 42 receipts into its batch 1 (`72017e67…`). References to `CAEO5GBC…LNJ2` now point at the new contract. |
 | 2026-11-03 | render retired | V-10, L-08 | Render is no longer used. Its three services and the Postgres were suspended after the move to Vercel (#138). The database was copied into Neon (`pactwright-testnet-db`, attached through the Vercel marketplace) with every table's row count matching (43 pacts, 117 events, 42 receipts, 7 batches, 30 verdicts, 2 envelopes). The verifier and Studio now use Neon; a Studio sync advanced Neon's cursor while Render's stayed put. `render.yaml` and the verifier's `RENDER_EXTERNAL_URL` fallback are removed. AGENTS §8 now names `deploy/` and `vercel.json` as the protected deployment configs. |

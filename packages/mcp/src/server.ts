@@ -36,6 +36,7 @@ export function createServer(options?: ServerOptions): Server {
       tools: tools.map((t) => ({
         name: t.name,
         description: t.description,
+        annotations: t.annotations,
         inputSchema: t.inputSchema ?? {
           type: "object",
           properties: {},

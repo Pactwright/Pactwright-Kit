@@ -7,6 +7,9 @@ export const getPactTool: ToolDefinition<typeof input> = {
   name: "pactwright_get_pact",
   description:
     "Get a pact's state and timeline. Not yet wired to a pact read: the agent has no get_pact path, so this refuses rather than describes.",
+  // `openWorldHint: false` is true only of the current handler: it throws before any request. When the
+  // real read is wired, this becomes a chain/indexer read and the hint must flip to true with it.
+  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   input,
   inputSchema: {
     type: "object",

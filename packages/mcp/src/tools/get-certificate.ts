@@ -6,6 +6,7 @@ const input = z.object({ pactId: z.string() });
 export const getCertificateTool: ToolDefinition<typeof input> = {
   name: "pactwright_get_certificate",
   description: "Get the certificate for a terminal pact.",
+  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   input,
   inputSchema: {
     type: "object",
