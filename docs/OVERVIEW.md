@@ -90,6 +90,7 @@ The components, and what each one actually does:
    - `accounts.ts` creates sponsored agent accounts (CAP-33 reserves plus a USDC trustline) and tops them up through RPC, and never returns the hash of an unsent transaction.
 5. **[`@pactwright/mcp`](../packages/mcp) and [`@pactwright/cli`](../packages/cli)** — the same runtime exposed to an LLM and to an operator.
    - MCP tools: `find_sellers`, `buy`, `get_pact`, `dispute`, `get_certificate`.
+   - Every tool states the four MCP behaviour hints (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) that a host warns users from, and `ToolDefinition` requires them, so a tool cannot be added without them.
    - CLI commands: `pactwright verify`, `pact`, `agent-create`, `agent-topup`.
 6. **[`@pactwright/adapters`](../packages/adapters)** — pluggable discovery, reputation, spending gate, wallet and verifier.
    - The Vespi gate and the Pollar wallet fail closed when their APIs are unreachable; neither has been exercised against the partner's real API (ROADMAP F-08 / F-09).

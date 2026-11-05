@@ -14,6 +14,11 @@ const input = z.object({
 export const buyTool: ToolDefinition<typeof input> = {
   name: "pactwright_buy",
   description: "Buy from a seller under a frozen condition; returns the response and pact ID.",
+  // `idempotencyKey` stops a retry buying twice — the same key derives the same nonce and the same
+  // pact, and the seller's second answer is a 409 that `agent.buy` throws on
+  // (packages/agent/src/buy.ts). A repeat call therefore has no further effect but does not return
+  // the first result either, so it is not the equivalence the hint promises a host.
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   input,
   inputSchema: {
     type: "object",

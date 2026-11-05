@@ -6,6 +6,7 @@ const input = z.object({ query: z.string(), maxPrice: z.string().optional() });
 export const findSellersTool: ToolDefinition<typeof input> = {
   name: "pactwright_find_sellers",
   description: "Search protected sellers and rank them.",
+  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   input,
   inputSchema: {
     type: "object",
