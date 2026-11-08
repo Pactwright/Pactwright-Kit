@@ -1,13 +1,22 @@
-/** Seller webhook challenge; DENY when no delivery receipt arrives in time. ROADMAP V-07. */
+/**
+ * Non-delivery challenge to the pact's own seller. ROADMAP V-07, ADR-020.
+ *
+ * Only an answer from the seller can justify a non-delivery DENY: a `2xx` without a receipt is
+ * "deny". No endpoint, no answer, a non-`2xx` or an unreadable body is "unanswered", which means
+ * no verdict; a caller-caused failure must never look like a seller admitting it didn't deliver.
+ * The endpoint comes from the caller's code, never from the environment for all sellers or from
+ * the verdict request.
+ */
 
 export interface NonDeliveryChallengeOptions {
+  /** The pact's own seller's challenge endpoint, from a source the requester can't edit. */
   sellerWebhookUrl?: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
 }
 
 export interface NonDeliveryChallengeResult {
-  status: "delivered" | "deny";
+  status: "delivered" | "deny" | "unanswered";
   deliveryReceipt?: string;
   reason?: string;
 }
@@ -16,9 +25,9 @@ export async function challengeNonDelivery(
   pactId: string,
   options?: NonDeliveryChallengeOptions,
 ): Promise<NonDeliveryChallengeResult> {
-  const webhookUrl = options?.sellerWebhookUrl ?? process.env.SELLER_WEBHOOK_URL;
+  const webhookUrl = options?.sellerWebhookUrl;
   if (!webhookUrl) {
-    return { status: "deny", reason: "no_seller_webhook_configured" };
+    return { status: "unanswered", reason: "no_seller_endpoint" };
   }
 
   const doFetch = options?.fetchImpl ?? globalThis.fetch;
@@ -42,14 +51,19 @@ export async function challengeNonDelivery(
     clearTimeout(timer);
 
     if (!res.ok) {
-      return { status: "deny", reason: `seller_responded_http_${res.status}` };
+      return { status: "unanswered", reason: `seller_responded_http_${res.status}` };
     }
 
     interface ChallengeResponse {
       deliveryReceipt?: string;
     }
 
-    const data = (await res.json()) as ChallengeResponse;
+    let data: ChallengeResponse;
+    try {
+      data = (await res.json()) as ChallengeResponse;
+    } catch {
+      return { status: "unanswered", reason: "seller_answer_unreadable" };
+    }
     if (data.deliveryReceipt && data.deliveryReceipt.includes("sha256=") && data.deliveryReceipt.includes("sig=")) {
       return {
         status: "delivered",
@@ -57,9 +71,9 @@ export async function challengeNonDelivery(
       };
     }
 
-    return { status: "deny", reason: "seller_omitted_valid_delivery_receipt" };
+    return { status: "deny", reason: "seller_answered_without_a_delivery_receipt" };
   } catch (err) {
     clearTimeout(timer);
-    return { status: "deny", reason: `challenge_timeout_or_error: ${String(err)}` };
+    return { status: "unanswered", reason: `challenge_timeout_or_error: ${String(err)}` };
   }
 }

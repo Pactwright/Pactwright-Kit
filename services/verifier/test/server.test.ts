@@ -95,6 +95,13 @@ describe("verifier HTTP API", () => {
     expect(await res.json()).toEqual({ error: "not_implemented", roadmapTask: "V-02" });
   });
 
+  it("returns 202 with no verdict when there is no delivery receipt and no seller answer (ADR-020)", async () => {
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: async () => "no-delivery-receipt" });
+    const res = await post(app, { terms, evidence });
+    expect(res.status).toBe(202);
+    expect(await res.json()).toEqual({ verdict: null, reason: "no_delivery_receipt" });
+  });
+
   it("returns 202 with no verdict on a model refusal", async () => {
     const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: async () => "no-verdict" });
     expect((await post(app, { terms, evidence })).status).toBe(202);

@@ -47,6 +47,11 @@ export interface PipelineOptions {
   envelopeBaseUrl?: string;
   /** How long to wait for the seller's delivery challenge answer. */
   nonDeliveryTimeoutMs?: number;
+  /**
+   * The pact's own seller's challenge endpoint, from a source the requester can't edit (ADR-020).
+   * Without it, a request with no delivery receipt gets no verdict.
+   */
+  sellerWebhookUrl?: string;
 }
 
 export function parseDeliveryHeader(header: string): { bodySha256: string; signature: string } | null {
@@ -58,7 +63,7 @@ export function parseDeliveryHeader(header: string): { bodySha256: string; signa
 export async function runPipeline(
   input: PipelineInput,
   options?: PipelineOptions,
-): Promise<PipelineResult | "no-verdict"> {
+): Promise<PipelineResult | "no-verdict" | "no-delivery-receipt"> {
   const { terms, evidence, milestone } = input;
   let deliveryReceipt = input.deliveryReceipt;
 
@@ -116,13 +121,18 @@ export async function runPipeline(
   if (!deliveryReceipt) {
     // Challenge seller for delivery receipt
     const challengeRes = await challengeNonDelivery(terms.pactId, {
+      ...(options?.sellerWebhookUrl ? { sellerWebhookUrl: options.sellerWebhookUrl } : {}),
       fetchImpl: options?.fetchImpl,
       timeoutMs: options?.nonDeliveryTimeoutMs,
     });
     if (challengeRes.status === "delivered" && challengeRes.deliveryReceipt) {
       deliveryReceipt = challengeRes.deliveryReceipt;
+    } else if (challengeRes.status === "unanswered") {
+      // ADR-020: without an answer from the pact's own seller there is no verdict; escrow falls to
+      // its silence policy. Signing DENY here would let anyone refund a pact the seller delivered.
+      return "no-delivery-receipt";
     } else {
-      // Non-delivery or timeout produces DENY
+      // The seller's own endpoint answered without a receipt: non-delivery DENY (FR-V6)
       const denyDecision: RuleDecision = {
         verdict: "DENY",
         amount: 0n,

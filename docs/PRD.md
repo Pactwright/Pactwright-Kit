@@ -129,7 +129,7 @@ Priority: **P0** = MVP · **P1** = v1 · **P2** = later.
 | FR-V3 | **The buyer** submits evidence (body + delivery receipt) to the verifier. | P0 |
 | FR-V4 | Verdicts are ALLOW/DENY with an amount (partial delivery) and criteria scores, in Witness verdict-v1 envelopes. | P0 |
 | FR-V5 | Deterministic rules decide; the model only reads into a structured output (pinned model and explicit effort; model ID, effort and raw-output hash recorded). A model refusal produces no verdict. | P0 |
-| FR-V6 | Non-delivery: no delivery receipt within the timeout → DENY. | P0 |
+| FR-V6 | Non-delivery: no delivery receipt within the timeout → DENY, but only on an answer from the pact's own seller's challenge endpoint; without one there is no verdict and the silence policy decides (ADR-020). | P0 |
 | FR-V7 | Each route sets `verify.minAmount`; below it, pacts are receipted but not verified. | P0 |
 | FR-V8 | At most one verdict attestation per pact; one verifier key, snapshotted per pact, rotatable for new pacts. | P0 |
 | FR-V9 | Anyone can check an envelope offline with one CLI command. | P0 |

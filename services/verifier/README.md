@@ -58,6 +58,15 @@ can't edit ([ADR-019](../../docs/adr/ADR-019-verdict-terms-from-chain.md)):
 Terms that fail get `422 {"error":"terms_mismatch","problems":[…]}` and nothing is signed. If the
 chain can't be read, the answer is `503 {"error":"chain_unavailable"}`.
 
+### No delivery receipt means no verdict, unless the seller says so
+
+A request without `deliveryReceipt` gets `202 {"verdict":null,"reason":"no_delivery_receipt"}`
+([ADR-020](../../docs/adr/ADR-020-non-delivery-needs-the-seller.md)). The verifier signs a
+non-delivery DENY only when the pact's own seller, at an endpoint the requester can't choose,
+answers `2xx` without a receipt; an unreachable or slow seller is no answer. There is no
+`SELLER_WEBHOOK_URL`: one URL for every seller challenged the wrong party. An escrow pact without a
+verdict falls to its silence policy at the verdict deadline (refund by default).
+
 Endpoints: `GET /health`, `GET /v1/envelopes/:sha256`, `POST /v1/verdicts`.
 
 `GET /health` also reports `verdictRequests` (verdicts this process was asked to decide) and

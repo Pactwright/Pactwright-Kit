@@ -123,7 +123,7 @@ async function runCase(c: RealCase, model: ReturnType<typeof recording>): Promis
       },
     );
     const { raw, output } = model.take();
-    if (result === "no-verdict") return { ...base, got: { verdict: "NO_VERDICT" }, pass: false, rawSha256: raw, reading: output };
+    if (result === "no-verdict" || result === "no-delivery-receipt") return { ...base, got: { verdict: "NO_VERDICT" }, pass: false, rawSha256: raw, reading: output };
     const verdict: "ALLOW" | "DENY" = result.amount > 0n ? "ALLOW" : "DENY";
     const got: CaseResult["got"] = verdict === "ALLOW" ? { verdict, amountStroops: result.amount.toString() } : { verdict };
     const pass = verdict === c.expected.verdict && (c.expected.amountStroops === undefined || got.amountStroops === c.expected.amountStroops);
