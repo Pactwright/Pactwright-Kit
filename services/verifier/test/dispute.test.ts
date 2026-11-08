@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Keypair, type PactTerms } from "@pactwright/core";
+import { Keypair, conditionHash, type PactTerms } from "@pactwright/core";
 import { runPipeline } from "../src/pipeline.ts";
 import { clearIssuedAttestations } from "../src/sign.ts";
 
@@ -15,7 +15,7 @@ describe("Verifier Dispute Milestones (P7-05, FR-S6)", () => {
     seller: sellerKey.publicKey(),
     cap: "1.00",
     condition: { kind: "document.translation", sourceText: "hello", targetLang: "es" },
-    conditionHash: "aa".repeat(32),
+    conditionHash: conditionHash({ kind: "document.translation", sourceText: "hello", targetLang: "es" }),
     verdictDeadline: 1000,
     settleDeadline: 2000,
     refundWindowLedgers: 50,

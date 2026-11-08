@@ -51,7 +51,12 @@ export interface SignPipelineResult {
 export async function signVerdict(params: SignPipelineParams): Promise<SignPipelineResult> {
   const { terms, decision, evidence, verifierKey, milestone, ledgerSeq, envelopeBaseUrl } = params;
 
-  const condHash = terms.conditionHash || computeConditionHash(terms.condition);
+  // Sign only the hash of the condition the rules judged; a caller-chosen hash would let an easy
+  // condition stand in for the pact's real one (ADR-019).
+  const condHash = computeConditionHash(terms.condition);
+  if (terms.conditionHash && terms.conditionHash.toLowerCase() !== condHash) {
+    throw new Error("terms.conditionHash is not the hash of terms.condition; refusing to sign");
+  }
 
   const unsigned: UnsignedEnvelope = {
     agreementId: terms.pactId,

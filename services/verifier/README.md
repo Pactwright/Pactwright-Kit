@@ -28,6 +28,8 @@ To deploy your own on Vercel:
      [`pactwright-evidence`](https://github.com/Pactwright/pactwright-evidence) repository.
    - `DATABASE_URL`: Postgres for verdict envelopes. Production refuses to start without it.
    - `STELLAR_RPC_URL`: each escrow attestation is stamped with its latest ledger.
+   - `PACT_CONTRACT_ID` and `STELLAR_NETWORK_PASSPHRASE`: the `pact` contract whose pacts this
+     verifier judges, and its network. Every request is checked against that contract first.
 
    Envelope links point at the project's production domain (`VERCEL_PROJECT_PRODUCTION_URL`)
    unless `VERIFIER_PUBLIC_URL` is set. Until the configuration is complete, every request
@@ -38,7 +40,23 @@ The [`Dockerfile`](Dockerfile) runs the same app as a long-lived server for any 
 it reads the same variables, plus `VERIFIER_PORT` or the host's `PORT`.
 
 The process refuses to start, listing every problem, if the model, its API key, the verifier key,
-the evidence bucket, the RPC or (in production) the database is missing: it never invents a reading.
+the evidence bucket, the RPC, the `pact` contract or (in production) the database is missing: it
+never invents a reading.
+
+### It judges the pact on the chain, not the terms it is sent
+
+Before reading any evidence, `POST /v1/verdicts` checks the request's terms against sources a caller
+can't edit ([ADR-019](../../docs/adr/ADR-019-verdict-terms-from-chain.md)):
+
+- `conditionHash` is the hash of `condition`, and `pactId` is derived from the buyer, seller, nonce
+  and that hash.
+- For escrow, `get_pact` returns a pact with the same buyer, seller, cap and condition hash, still
+  waiting for its verdict.
+- The delivery key is the seller account's own key, or the key the seller published on its account
+  as the data entry `pactwright.delivery_key`.
+
+Terms that fail get `422 {"error":"terms_mismatch","problems":[…]}` and nothing is signed. If the
+chain can't be read, the answer is `503 {"error":"chain_unavailable"}`.
 
 Endpoints: `GET /health`, `GET /v1/envelopes/:sha256`, `POST /v1/verdicts`.
 

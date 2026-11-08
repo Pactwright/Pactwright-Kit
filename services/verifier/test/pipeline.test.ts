@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { Keypair } from "@witness/core";
-import { deliveryMessage, toStroops, type PactTerms } from "@pactwright/core";
+import { conditionHash, deliveryMessage, toStroops, type PactTerms } from "@pactwright/core";
 import {
   runPipeline,
   signVerdict,
@@ -25,7 +25,7 @@ const mockTerms: PactTerms = {
   resourceUrl: "https://seller.test/api/translate",
   cap: "1.00",
   nonce: "1",
-  conditionHash: "02".repeat(32),
+  conditionHash: conditionHash({ kind: "document.translation", lang: "es", minPages: 1, maxUntranslatedSegments: 0 }),
   condition: {
     kind: "document.translation",
     lang: "es",

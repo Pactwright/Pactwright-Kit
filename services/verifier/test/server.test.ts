@@ -6,6 +6,9 @@ import { DuplicateVerdictError, MemoryVerdictStore, PostgresVerdictStore, type V
 import { loadVerifierConfig, type VerifierConfigError } from "../src/config.ts";
 import { runPipeline, type PipelineResult } from "../src/pipeline.ts";
 
+/** Terms that match the chain; the chain check itself is tested in chain-terms.test.ts. */
+const termsMatch = async (): Promise<string[]> => [];
+
 const key = Keypair.fromRawEd25519Seed(Buffer.alloc(32, 7));
 const hex = "a".repeat(64);
 const G = key.publicKey();
@@ -43,7 +46,7 @@ async function counters(app: ReturnType<typeof createApp>): Promise<Counters> {
 
 describe("verifier HTTP API", () => {
   it("GET /health reports the signing key", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: runPipeline });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: runPipeline });
     const res = await app.request("/health");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
@@ -56,14 +59,14 @@ describe("verifier HTTP API", () => {
   });
 
   it("GET /health says where envelopes are kept", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), storeKind: "memory", pipeline: runPipeline });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), storeKind: "memory", pipeline: runPipeline });
     expect(((await (await app.request("/health")).json()) as { store: string }).store).toBe("memory");
   });
 
   it("POST /v1/verdicts stores the envelope, then rejects a second delivery verdict with 409", async () => {
     const store = new MemoryVerdictStore();
     const sha = "b".repeat(64);
-    const app = createApp({ verifierKey: key, store, pipeline: fakePipeline(sha) });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store, pipeline: fakePipeline(sha) });
     const first = await post(app, { terms, evidence });
     expect(first.status).toBe(201);
     expect((await first.json()).amount).toBe("10000000");
@@ -79,21 +82,21 @@ describe("verifier HTTP API", () => {
   it("a dispute milestone is a separate verdict", async () => {
     const store = new MemoryVerdictStore();
     await store.put(envelopeFor("delivery"), "c".repeat(64));
-    const app = createApp({ verifierKey: key, store, pipeline: fakePipeline("d".repeat(64)) });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store, pipeline: fakePipeline("d".repeat(64)) });
     expect((await post(app, { terms, evidence, milestone: "delivery" })).status).toBe(409);
     expect(await store.find(hex, "dispute-1")).toBeUndefined();
   });
 
   it("returns 501 naming the roadmap task while the pipeline is a stub", async () => {
     const stubPipeline = () => { throw new NotImplementedError("V-02"); };
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: stubPipeline });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: stubPipeline });
     const res = await post(app, { terms, evidence });
     expect(res.status).toBe(501);
     expect(await res.json()).toEqual({ error: "not_implemented", roadmapTask: "V-02" });
   });
 
   it("returns 202 with no verdict on a model refusal", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: async () => "no-verdict" });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: async () => "no-verdict" });
     expect((await post(app, { terms, evidence })).status).toBe(202);
   });
 
@@ -102,12 +105,12 @@ describe("verifier HTTP API", () => {
     ["bad milestone", { terms, evidence, milestone: "appeal" }],
     ["not JSON", "nope"],
   ])("rejects %s with 400", async (_n, body) => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: runPipeline });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: runPipeline });
     expect((await post(app, body)).status).toBe(400);
   });
 
   it("GET /v1/envelopes validates the hash and returns 404 when unknown", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: runPipeline });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: runPipeline });
     expect((await app.request("/v1/envelopes/xyz")).status).toBe(400);
     expect((await app.request(`/v1/envelopes/${"e".repeat(64)}`)).status).toBe(404);
   });
@@ -116,21 +119,21 @@ describe("verifier HTTP API", () => {
 /** The numbers behind the `verifier_error_rate` probe (ROADMAP XC-03). */
 describe("verdict counters on /health", () => {
   it("counts a served verdict and its idempotent retry as one request and no failure", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: fakePipeline("a".repeat(64)) });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: fakePipeline("a".repeat(64)) });
     expect((await post(app, { terms, evidence })).status).toBe(201);
     expect((await post(app, { terms, evidence })).status).toBe(409);
     expect(await counters(app)).toEqual({ verdictRequests: 1, verdictFailures: 0 });
   });
 
   it("counts no request that never reached the pipeline", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: fakePipeline("b".repeat(64)) });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: fakePipeline("b".repeat(64)) });
     expect((await post(app, { terms })).status).toBe(400);
     expect((await post(app, "nope")).status).toBe(400);
     expect(await counters(app)).toEqual({ verdictRequests: 0, verdictFailures: 0 });
   });
 
   it("counts a model refusal as a verdict the verifier answered", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: async () => "no-verdict" });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: async () => "no-verdict" });
     expect((await post(app, { terms, evidence })).status).toBe(202);
     expect(await counters(app)).toEqual({ verdictRequests: 1, verdictFailures: 0 });
   });
@@ -138,6 +141,7 @@ describe("verdict counters on /health", () => {
   it("counts a crash in the pipeline as a failure, which is the 500 /health reported", async () => {
     const app = createApp({
       verifierKey: key,
+      checkTerms: termsMatch,
       store: new MemoryVerdictStore(),
       pipeline: async () => {
         throw new Error("model provider exploded");
@@ -149,7 +153,7 @@ describe("verdict counters on /health", () => {
   });
 
   it("counts an unimplemented condition kind as a failure to serve", async () => {
-    const app = createApp({ verifierKey: key, store: new MemoryVerdictStore(), pipeline: () => { throw new NotImplementedError("V-02"); } });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store: new MemoryVerdictStore(), pipeline: () => { throw new NotImplementedError("V-02"); } });
     expect((await post(app, { terms, evidence })).status).toBe(501);
     expect(await counters(app)).toEqual({ verdictRequests: 1, verdictFailures: 1 });
   });
@@ -162,7 +166,7 @@ describe("verdict counters on /health", () => {
         throw new Error("database is read-only");
       },
     };
-    const app = createApp({ verifierKey: key, store, pipeline: fakePipeline("9".repeat(64)) });
+    const app = createApp({ verifierKey: key, checkTerms: termsMatch, store, pipeline: fakePipeline("9".repeat(64)) });
     expect((await post(app, { terms, evidence })).status).toBe(500);
     expect(await counters(app)).toEqual({ verdictRequests: 1, verdictFailures: 1 });
   });
@@ -227,6 +231,7 @@ describe("loadVerifierConfig", () => {
     VERIFIER_PROVIDER: "example", VERIFIER_MODEL: "model-1", VERIFIER_SECRET_KEY: key.secret(),
     VERIFIER_LLM_API_KEY: "test-key", FACILITATOR_URL: "https://facilitator.example", EVIDENCE_BUCKET_URL: "s3://evidence",
     STELLAR_RPC_URL: "https://rpc.example", VERIFIER_PUBLIC_URL: "https://verifier.example/",
+    PACT_CONTRACT_ID: "CDUXJJUNYFILEYHE3LITANJEKCDFERNAABOSG75OWATFVM776BCMFEV6", STELLAR_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015",
   };
   it("loads a complete config with defaults", () => {
     const config = loadVerifierConfig(env);
