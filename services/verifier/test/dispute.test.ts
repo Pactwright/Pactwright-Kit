@@ -43,11 +43,15 @@ describe("Verifier Dispute Milestones (P7-05, FR-S6)", () => {
         verifierKey,
         ledgerSeq: 120,
         settledLedger: 100,
+        // The seller's own endpoint answers without a receipt, so the verdict is a DENY (ADR-020).
+        sellerWebhookUrl: "https://seller.test/webhook",
+        fetchImpl: async () => new Response(JSON.stringify({}), { status: 200 }),
       },
     );
 
     expect(result).not.toBe("no-verdict");
-    if (result === "no-verdict") return;
+    expect(result).not.toBe("no-delivery-receipt");
+    if (result === "no-verdict" || result === "no-delivery-receipt") return;
 
     expect(result.envelope).toBeDefined();
     expect(result.envelope.milestoneId).toBe("dispute-1");
