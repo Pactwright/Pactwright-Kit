@@ -10,7 +10,7 @@ import {
   submit,
   ProviderNeutralLLMAdapter,
 } from "../src/index.ts";
-import { clearIssuedAttestations } from "../src/sign.ts";
+import { clearIssuedAttestations, hasIssuedAttestation } from "../src/sign.ts";
 
 const VALID_BUYER = "GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJVTOO";
 const VALID_SELLER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
@@ -462,8 +462,6 @@ describe("Verifier Engine Pipeline", () => {
     // only checked the parse — nothing ever passed it to the client, so the effective deadline stayed
     // the hard-coded 5 s. These two tests are the wiring, not the constant.
     it("aborts the challenge on the deadline it is given, not on the 5 s default", async () => {
-      const previous = process.env.SELLER_WEBHOOK_URL;
-      process.env.SELLER_WEBHOOK_URL = "https://seller.test/webhook";
       const hangingFetch = vi.fn<typeof fetch>(
         (_url, init) =>
           new Promise((_resolve, reject) => {
@@ -471,34 +469,70 @@ describe("Verifier Engine Pipeline", () => {
           }),
       );
       const started = Date.now();
+      const res = await runPipeline(
+        { terms: mockTerms, evidence: [], milestone: "delivery" },
+        { verifierKey, fetchImpl: hangingFetch, nonDeliveryTimeoutMs: 25, sellerWebhookUrl: "https://seller.test/webhook" },
+      );
+      const elapsed = Date.now() - started;
+      // ADR-020: a seller that didn't answer in time is not a seller admitting non-delivery.
+      expect(res).toBe("no-delivery-receipt");
+      expect(hangingFetch).toHaveBeenCalledTimes(1);
+      // 5 s is what the client falls back to when nothing is passed; 25 ms is what was configured.
+      expect(elapsed).toBeLessThan(2_000);
+    });
+
+    it("treats a seller that is unreachable, errors or answers unreadably as no answer", async () => {
+      for (const fetchImpl of [
+        vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ error: "No delivery available" }), { status: 404 })),
+        vi.fn<typeof fetch>(async () => new Response("bad gateway", { status: 502 })),
+        vi.fn<typeof fetch>(async () => new Response("not json", { status: 200 })),
+        vi.fn<typeof fetch>(async () => {
+          throw new Error("ECONNREFUSED");
+        }),
+      ]) {
+        const res = await challengeNonDelivery("01".repeat(32), { sellerWebhookUrl: "https://seller.test/webhook", fetchImpl });
+        expect(res.status).toBe("unanswered");
+      }
+    });
+
+    it("returns 'deny' only when the seller's own endpoint answers without a receipt", async () => {
+      const mockFetch = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ delivered: false }), { status: 200 }));
+      const res = await challengeNonDelivery("01".repeat(32), { sellerWebhookUrl: "https://seller.test/webhook", fetchImpl: mockFetch });
+      expect(res.status).toBe("deny");
+    });
+
+    it("signs nothing for a request without a receipt when no seller endpoint is configured", async () => {
+      const previous = process.env.SELLER_WEBHOOK_URL;
+      // The old global fallback must not come back: one URL for every seller challenges the wrong party.
+      process.env.SELLER_WEBHOOK_URL = "https://attacker.test/always-denies";
+      const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({}), { status: 200 }));
       try {
+        const escrow: PactTerms = { ...mockTerms, mode: "escrow", pactId: "0c".repeat(32) };
         const res = await runPipeline(
-          { terms: mockTerms, evidence: [], milestone: "delivery" },
-          { verifierKey, fetchImpl: hangingFetch, nonDeliveryTimeoutMs: 25 },
+          { terms: escrow, evidence: [], milestone: "delivery" },
+          { verifierKey, fetchImpl, ledgerSeq: 100 },
         );
-        const elapsed = Date.now() - started;
-        expect(res).not.toBe("no-verdict");
-        if (res !== "no-verdict") expect(res.envelope.verdict.decision).toBe("DENY");
-        expect(hangingFetch).toHaveBeenCalledTimes(1);
-        // 5 s is what the client falls back to when nothing is passed; 25 ms is what was configured.
-        expect(elapsed).toBeLessThan(2_000);
+        expect(res).toBe("no-delivery-receipt");
+        expect(fetchImpl).not.toHaveBeenCalled();
+        expect(hasIssuedAttestation("0c".repeat(32))).toBe(false);
       } finally {
         if (previous === undefined) delete process.env.SELLER_WEBHOOK_URL;
         else process.env.SELLER_WEBHOOK_URL = previous;
       }
     });
 
-    it("returns 'deny' on seller silence / timeout / failure", async () => {
-      const mockFetch = vi.fn<typeof fetch>(async () =>
-        new Response(JSON.stringify({ error: "No delivery available" }), { status: 404 }),
+    it("signs a non-delivery DENY when the seller's own endpoint admits it has no receipt", async () => {
+      const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({}), { status: 200 }));
+      const escrow: PactTerms = { ...mockTerms, mode: "escrow", pactId: "0d".repeat(32) };
+      const res = await runPipeline(
+        { terms: escrow, evidence: [], milestone: "delivery" },
+        { verifierKey, fetchImpl, ledgerSeq: 100, sellerWebhookUrl: "https://seller.test/webhook" },
       );
-
-      const res = await challengeNonDelivery("01".repeat(32), {
-        sellerWebhookUrl: "https://seller.test/webhook",
-        fetchImpl: mockFetch,
-      });
-
-      expect(res.status).toBe("deny");
+      expect(res).not.toBe("no-delivery-receipt");
+      if (res !== "no-verdict" && res !== "no-delivery-receipt") {
+        expect(res.envelope?.verdict.decision).toBe("DENY");
+        expect(res.attestation).toBeDefined();
+      }
     });
   });
 

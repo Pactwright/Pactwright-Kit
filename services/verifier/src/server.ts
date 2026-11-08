@@ -29,7 +29,7 @@ export interface AppDeps {
   store: VerdictStore;
   /** Reported on /health so a deployment that would lose envelopes is visible. */
   storeKind?: "postgres" | "memory";
-  pipeline: (input: PipelineInput) => Promise<PipelineResult | "no-verdict">;
+  pipeline: (input: PipelineInput) => Promise<PipelineResult | "no-verdict" | "no-delivery-receipt">;
   /**
    * Why the request's terms can't be judged (empty when they match the chain). Throws when the chain
    * can't be read. ADR-019: the verifier never signs terms it hasn't checked against the pact.
@@ -91,7 +91,7 @@ async function verdict(c: Context, deps: AppDeps): Promise<Response> {
   const existing = await deps.store.find(request.terms.pactId, request.milestone);
   if (existing) return c.json({ error: "verdict_exists", envelopeSha256: existing }, 409);
 
-  let result: PipelineResult | "no-verdict";
+  let result: PipelineResult | "no-verdict" | "no-delivery-receipt";
   try {
     result = await deps.pipeline({
       terms: request.terms,
@@ -105,6 +105,8 @@ async function verdict(c: Context, deps: AppDeps): Promise<Response> {
     throw e;
   }
   if (result === "no-verdict") return c.json({ verdict: null, reason: "model_refusal" }, 202);
+  // ADR-020: no receipt and no answer from the pact's own seller; the silence policy decides.
+  if (result === "no-delivery-receipt") return c.json({ verdict: null, reason: "no_delivery_receipt" }, 202);
 
   if (result.receiptOnly || !result.envelope) {
     return c.json(
