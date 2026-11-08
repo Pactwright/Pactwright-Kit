@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Last updated | 2026-11-08 |
-| Progress | **54 / 61 tasks (89%)** |
+| Progress | **55 / 62 tasks (89%)** |
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · owner `core`/`wave` · size `T`/`M`/`H`.
 
@@ -19,7 +19,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped (ADR) · 
 |---|---|---|---|
 | Foundations (this repo) | 7 | 7 | 100% |
 | Phase 3 — Kit | 19 | 16 | 84% |
-| Phase 4 — Verifier | 14 | 13 | 93% |
+| Phase 4 — Verifier | 15 | 14 | 93% |
 | Phase 7 — v1 | 12 | 10 | 83% |
 | Phase 8 — v1.1 | 2 | 1 | 50% |
 | Phase 9 — v2 | 7 | 7 | 100% |
@@ -78,6 +78,7 @@ Trustworthy, reproducible verdicts for one condition kind.
 - [x] **V-11** Measure verification latency; set default deadline lengths; answer Q6 — core · M · V-10 · Q6 (#72, 2026-10-29)
 - [ ] **V-13** The envelope hash commits to the signed envelope, not the proof hash; unique store key; test vector (ADR-018) — core · M · V-05
 - [x] **V-14** The verifier judges the pact on the chain, not the terms it is sent: condition hash and `pact_id` recomputed, escrow terms read with `get_pact`, delivery key bound to the seller account (ADR-019) — core · H · V-02, V-05 · ADR-019 (#176, 2026-11-08)
+- [x] **V-15** A non-delivery DENY needs an answer from the pact's own seller: no receipt and no trusted seller endpoint → no verdict, the `SELLER_WEBHOOK_URL` fallback removed (ADR-020, FR-V6) — core · H · V-07 · ADR-020 (#177, 2026-11-08)
 
 ## Phase 7 — v1
 
@@ -119,6 +120,7 @@ Mainnet operation of the pieces this repo runs: the verifier and the end-to-end 
 
 | Date | PR / change | Tasks | Summary |
 |---|---|---|---|
+| 2026-11-08 | #177 | V-15 added `[x]` | Pre-launch review finding #2: a verdict request without a delivery receipt got a signed DENY at once. The challenge went to one global `SELLER_WEBHOOK_URL`, and with it unset (the hosted verifier) the verifier denied immediately, so anyone could refund any escrow pact after delivery. Now (ADR-020) DENY needs a `2xx` answer without a receipt from the pact's own seller at an endpoint the requester can't choose; no endpoint, no answer or an error is no verdict (`202 no_delivery_receipt`) and escrow falls to its silence policy. The global fallback is removed. PRD FR-V6 and ARCHITECTURE §5.1 updated. 6 new tests, 3 updated. |
 | 2026-11-08 | #176 | V-14 added `[x]` | Pre-launch review finding #1: `POST /v1/verdicts` signed attestations for whatever terms the caller sent, and `signVerdict` used a caller-supplied `conditionHash` without checking it against the condition it judged. A seller could get ALLOW for an easier condition; a buyer could sign its own "delivery receipt" and get DENY. The verifier now checks every request against the chain first (ADR-019): the condition hash and `pact_id` are recomputed, escrow pacts are read with `get_pact`, and the delivery key must be the seller account key or its `pactwright.delivery_key` data entry. Mismatches get 422, an unreadable chain 503, and nothing is signed. New config: `PACT_CONTRACT_ID`, `STELLAR_NETWORK_PASSPHRASE`. 13 new tests; the real reader was checked against testnet. |
 | 2026-11-05 | `feat/mcp-tool-annotations` | K-19 added `[x]` | All five MCP tools now state the four behaviour hints, and `ToolDefinition` requires them, so a sixth tool cannot compile without saying what it does. Found by an external crawl that flagged the gap — the OpenAI and Anthropic directories reject a tool where any of `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint` is missing, and a host warns users from exactly these. Values come from the handlers, not the intentions: `find_sellers` and `get_certificate` are read-only network reads; `buy` is `readOnlyHint: false, destructiveHint: true` because it moves USDC and opens a pact, and `idempotentHint: false` because the same key cannot double-buy (`agent.buy` throws on the seller's 409) but a retry does not return the first result either, which is not the equivalence the hint promises; `get_pact` and `dispute` are `openWorldHint: false` because both refuse before any request leaves the process, and `dispute` stays `readOnlyHint: false` so the warning is already in place when the milestone path is wired. `server.ts` publishes them on `tools/list`. Two tests: one asserts the four values on the wire for every tool, one asserts each tool states exactly four booleans and never claims to be both read-only and destructive. Measured: `tsc -p tsconfig.json` exit 0, `eslint packages/mcp` exit 0, `vitest run` **45 files, 439 passed \| 3 skipped**. Mutation-checked — flipping `buy`'s `openWorldHint` fails the wire test, deleting `get-certificate`'s block fails two tests and `tsc` (TS2741). Counts 52/59 (88%) → 53/60 (88%), Phase 3 15/18 → 16/19. |
 | 2026-11-04 | dependabot | — | Dependabot no longer proposes Node major versions for the verifier image. #100 (Node 25) failed `verifier-image` because Node 25 drops `corepack`, which the build runs first. The image stays on Node 24 LTS; digest and minor updates continue. |

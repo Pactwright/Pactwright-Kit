@@ -267,7 +267,7 @@ sequenceDiagram
   end
 ```
 - **Buyer submits the evidence** (ADR-012). The delivery receipt proves exactly what the seller sent, so neither side can fake it.
-- **Non-delivery:** if the agent gets no `200` within `deliveryTimeout`, it files a non-delivery claim; the verifier asks the seller (webhook) for a delivery receipt; none within the window → DENY.
+- **Non-delivery (ADR-020):** if the agent gets no `200` within `deliveryTimeout`, it files a non-delivery claim. The verifier asks the pact's own seller for a delivery receipt at an endpoint the requester can't choose; a `2xx` answer without a receipt → DENY. No endpoint, no answer or an error → no verdict (`202 no_delivery_receipt`), and an escrow pact falls to its silence policy (refund by default).
 - **Cheap calls:** below `verify.minAmount` the pact is receipted but not verified (cost guard, B12).
 
 ### 5.2 M2 — escrow with verdict
