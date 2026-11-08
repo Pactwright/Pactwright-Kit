@@ -18,6 +18,10 @@ export interface VerifierConfig {
   evidenceBucketUrl: string;
   /** Stellar RPC: the current ledger goes into every escrow attestation. */
   rpcUrl: string;
+  /** The `pact` contract whose pacts this verifier judges (ADR-019). */
+  pactContractId: string;
+  /** Network passphrase for reading that contract. */
+  networkPassphrase: string;
   /** Where this service is reachable; envelope references point at `<publicUrl>/v1/envelopes/<sha256>`. */
   publicUrl: string;
   /** Postgres for envelopes. Required in production so they survive restarts; memory otherwise. */
@@ -73,6 +77,9 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
   if (facilitatorUrl) url(facilitatorUrl, "FACILITATOR_URL", problems);
   if (evidenceBucketUrl) url(evidenceBucketUrl, "EVIDENCE_BUCKET_URL", problems);
   if (rpcUrl) url(rpcUrl, "STELLAR_RPC_URL", problems);
+  const pactContractId = required("PACT_CONTRACT_ID");
+  if (pactContractId && !/^C[A-Z2-7]{55}$/.test(pactContractId)) problems.push("PACT_CONTRACT_ID is not a contract address (C…)");
+  const networkPassphrase = required("STELLAR_NETWORK_PASSPHRASE");
   // VERIFIER_PUBLIC_URL wins; otherwise Vercel's production hostname (VERCEL_PROJECT_PRODUCTION_URL,
   // no scheme).
   const vercelHost = env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
@@ -112,6 +119,8 @@ export function loadVerifierConfig(env: NodeJS.ProcessEnv): VerifierConfig {
     facilitatorUrl,
     evidenceBucketUrl,
     rpcUrl,
+    pactContractId,
+    networkPassphrase,
     publicUrl,
     ...(databaseUrl ? { databaseUrl } : {}),
     nonDeliveryTimeoutSec,

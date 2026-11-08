@@ -12,7 +12,7 @@ import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Keypair, type EvidenceItem } from "@witness/core";
-import { deliveryMessage, type PactTerms } from "@pactwright/core";
+import { conditionHash, deliveryMessage, type PactTerms } from "@pactwright/core";
 import { runPipeline } from "../../src/pipeline.ts";
 import { ProviderNeutralLLMAdapter } from "../../src/models/llm.ts";
 import type { ModelAdapter } from "../../src/models/types.ts";
@@ -95,7 +95,7 @@ async function runCase(c: RealCase, model: ReturnType<typeof recording>): Promis
     resourceUrl: `https://seller.eval/${c.id}`,
     cap: c.cap,
     nonce: "1",
-    conditionHash: sha256(Buffer.from(JSON.stringify(c.condition))),
+    conditionHash: conditionHash(c.condition),
     condition: c.condition,
     verifier: verifierKey.rawPublicKey().toString("hex"),
     deliveryKey: seller.rawPublicKey().toString("hex"),

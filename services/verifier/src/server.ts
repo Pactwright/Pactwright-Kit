@@ -6,8 +6,9 @@
 import { serve } from "@hono/node-server";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
-import { NotImplementedError, PactTermsSchema } from "@pactwright/core";
+import { NotImplementedError, PactTermsSchema, type PactTerms } from "@pactwright/core";
 import { EvidenceItemSchema, parseAnchorReference, type Keypair } from "@witness/core";
+import { checkTermsAgainstChain, rpcChainReader } from "./chain-terms.ts";
 import type { VerifierConfig } from "./config.ts";
 import { createEvidenceLoader } from "./evidence.ts";
 import { VerdictMetrics } from "./metrics.ts";
@@ -29,6 +30,11 @@ export interface AppDeps {
   /** Reported on /health so a deployment that would lose envelopes is visible. */
   storeKind?: "postgres" | "memory";
   pipeline: (input: PipelineInput) => Promise<PipelineResult | "no-verdict">;
+  /**
+   * Why the request's terms can't be judged (empty when they match the chain). Throws when the chain
+   * can't be read. ADR-019: the verifier never signs terms it hasn't checked against the pact.
+   */
+  checkTerms: (terms: PactTerms, milestone: string) => Promise<string[]>;
 }
 
 const SHA256 = /^[0-9a-f]{64}$/;
@@ -71,6 +77,16 @@ async function verdict(c: Context, deps: AppDeps): Promise<Response> {
   const parsed = VerdictRequestSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: "invalid_request", issues: parsed.error.issues }, 400);
   const request = parsed.data;
+
+  // ADR-019: judge the pact on the chain, never terms a caller chose. Fail closed if it can't be read.
+  let problems: string[];
+  try {
+    problems = await deps.checkTerms(request.terms, request.milestone);
+  } catch (e) {
+    console.error(JSON.stringify({ level: "error", msg: "terms check failed", error: (e as Error).message }));
+    return c.json({ error: "chain_unavailable" }, 503);
+  }
+  if (problems.length) return c.json({ error: "terms_mismatch", problems }, 422);
 
   const existing = await deps.store.find(request.terms.pactId, request.milestone);
   if (existing) return c.json({ error: "verdict_exists", envelopeSha256: existing }, 409);
@@ -136,10 +152,16 @@ export async function buildVerifierApp(config: VerifierConfig): Promise<Hono> {
   });
   const evidenceLoader = createEvidenceLoader(config.evidenceBucketUrl);
   const store = config.databaseUrl ? await PostgresVerdictStore.connect(config.databaseUrl) : new MemoryVerdictStore();
+  const chain = rpcChainReader({
+    rpcUrl: config.rpcUrl,
+    networkPassphrase: config.networkPassphrase,
+    pactContractId: config.pactContractId,
+  });
   return createApp({
     verifierKey: config.verifierKey,
     store,
     storeKind: config.databaseUrl ? "postgres" : "memory",
+    checkTerms: (terms, milestone) => checkTermsAgainstChain(terms, milestone, chain),
     pipeline: async (input) =>
       runPipeline(input, {
         verifierKey: config.verifierKey,

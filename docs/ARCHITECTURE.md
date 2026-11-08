@@ -363,6 +363,7 @@ USDC trustline at startup. Keys come from KMS (B13).
 - This replaces the separate relayer from v0.1.
 
 ### 6.5 Verifier service
+- **Terms come from the chain (ADR-019):** before judging, the verifier checks `conditionHash = hash(condition)` and the derived `pact_id`, reads the escrow pact with `get_pact` (buyer, seller, cap, condition hash, `Funded`), and accepts only a delivery key that is the seller's account key or its `pactwright.delivery_key` account data entry. Mismatches get `422 terms_mismatch`; an unreadable chain gets `503`. Nothing is signed for terms a caller chose.
 - `POST /v1/verdicts`: verify the delivery receipt → hash-check evidence → model reads into a strict zod schema (provider and model pinned in config, explicit reasoning effort where the provider supports it, structured output; no sampling parameters such as `temperature`) → **deterministic rules decide** (`rules/<condition kind>.ts`) → Witness verdict-v1 envelope (model ID, effort, hash of raw model output) → for M2, sign one `VerdictAttestation` and submit it via `/pact/submit`.
 - **Rules:** each condition kind has a pure rule set; criteria use Witness reason codes and Witness's `decide()` makes the decision. Witness's REVIEW outcome becomes DENY (no human review in the MVP). `document.translation` pays pro rata when fewer pages than `minPages` arrive (non-mandatory `ITEMS_MISMATCH`).
 - **A model refusal yields no verdict:** the pact falls back to its silence policy (escrow) or no refund decision (M0) instead of a guess.
