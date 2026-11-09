@@ -1,8 +1,11 @@
 /** Show a pact's state and timeline. ROADMAP K-12. */
 
+/** The hosted testnet Studio. */
+const DEFAULT_STUDIO_URL = "https://pactwright-studio.vercel.app";
+
 export interface PactCommandOptions {
   fetchImpl?: typeof fetch;
-  facilitatorUrl?: string;
+  studioUrl?: string;
   log?: (msg: string) => void;
   error?: (msg: string) => void;
 }
@@ -12,13 +15,22 @@ export async function pact(args: string[], options?: PactCommandOptions): Promis
   const errorLog = options?.error ?? console.error;
 
   const pactId = args[0];
+  if (pactId === "--help" || pactId === "-h") {
+    log(`usage: pactwright pact <pact-id>
+
+Reads the pact from Studio (GET /api/pacts/<pact-id>).
+
+Environment:
+  STUDIO_URL  Studio base URL (default: ${DEFAULT_STUDIO_URL})`);
+    return;
+  }
   if (!pactId) {
     errorLog("usage: pactwright pact <pact-id>");
     process.exitCode = 2;
     return;
   }
 
-  const base = (options?.facilitatorUrl ?? process.env.STUDIO_URL ?? "https://studio.pactwright.dev").replace(/\/$/, "");
+  const base = (options?.studioUrl ?? process.env.STUDIO_URL ?? DEFAULT_STUDIO_URL).replace(/\/$/, "");
   const doFetch = options?.fetchImpl ?? globalThis.fetch;
   const url = `${base}/api/pacts/${pactId}`;
 

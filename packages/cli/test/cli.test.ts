@@ -82,7 +82,7 @@ describe("Pactwright CLI Commands", () => {
       const logs: string[] = [];
       const asked: string[] = [];
       await pact(["01".repeat(32)], {
-        facilitatorUrl: "http://studio.test",
+        studioUrl: "http://studio.test",
         fetchImpl: async (url) => {
           asked.push(String(url));
           return new Response(
@@ -110,7 +110,7 @@ describe("Pactwright CLI Commands", () => {
       const errors: string[] = [];
       process.exitCode = 0;
       await pact(["02".repeat(32)], {
-        facilitatorUrl: "http://studio.test",
+        studioUrl: "http://studio.test",
         fetchImpl: async () => new Response("nope", { status: 503, statusText: "Service Unavailable" }),
         log: (msg) => logs.push(msg),
         error: (msg) => errors.push(msg),
@@ -129,7 +129,7 @@ describe("Pactwright CLI Commands", () => {
       const errors: string[] = [];
       process.exitCode = 0;
       await pact(["03".repeat(32)], {
-        facilitatorUrl: "http://studio.test",
+        studioUrl: "http://studio.test",
         fetchImpl: (async () => {
           throw new Error("getaddrinfo ENOTFOUND studio.test");
         }) as typeof fetch,
@@ -140,6 +140,39 @@ describe("Pactwright CLI Commands", () => {
       expect(errors.some((e) => e.includes("ENOTFOUND"))).toBe(true);
       expect(logs).toContain("State:    unknown");
       process.exitCode = 0;
+    });
+
+    it("reads the hosted testnet Studio when STUDIO_URL is unset", async () => {
+      const saved = process.env.STUDIO_URL;
+      delete process.env.STUDIO_URL;
+      const asked: string[] = [];
+      try {
+        await pact(["04".repeat(32)], {
+          fetchImpl: async (url) => {
+            asked.push(String(url));
+            return new Response(JSON.stringify({ pactId: "04".repeat(32), state: "funded" }), { status: 200 });
+          },
+          log: () => {},
+          error: () => {},
+        });
+      } finally {
+        if (saved !== undefined) process.env.STUDIO_URL = saved;
+      }
+
+      expect(asked).toEqual(["https://pactwright-studio.vercel.app/api/pacts/" + "04".repeat(32)]);
+    });
+
+    it("names STUDIO_URL in --help", async () => {
+      const logs: string[] = [];
+      await pact(["--help"], {
+        fetchImpl: async () => {
+          throw new Error("--help must not fetch");
+        },
+        log: (msg) => logs.push(msg),
+        error: () => {},
+      });
+
+      expect(logs.join("\n")).toContain("STUDIO_URL");
     });
 
     it("shows usage error when no pactId provided", async () => {
